@@ -67,7 +67,7 @@ The initial target is Minecraft/Paper `1.21.11`.
 Plaza is in early bootstrap stage. The repository now has a Paperweight patcher
 layout and basic Plaza branding:
 
-- executable Mojmap bundler builds as `plaza-bundler-...-mojmap.jar`;
+- executable Paperclip distribution builds as `plaza-server-<version>.jar`;
 - server manifests use `Brand-Id: plazamc:plaza` and `Brand-Name: Plaza`;
 - Bukkit/Paper build info falls back to Plaza branding;
 - `/version` reports the server name from the Plaza brand;
@@ -80,19 +80,34 @@ layout and basic Plaza branding:
 Plaza tracks upstream Paper through the `paperCommit` property in
 `gradle.properties`.
 
-Apply patches and build an executable server jar with:
+Build a distributable Paperclip server jar with:
+
+```bash
+./build.sh
+```
+
+The script applies patches, runs `createMojmapPaperclipJar`, and copies the result
+to:
+
+```text
+plaza-server-<version>.jar
+```
+
+This is the preferred distribution artifact because it follows Paper's Paperclip
+model instead of shipping Mojang `net.minecraft` classes directly.
+
+For development or non-distribution workflows, the normal Gradle tasks remain
+available:
 
 ```bash
 ./gradlew applyAllPatches
 ./gradlew rebuildAllPatches
-./gradlew createMojmapBundlerJar
+./gradlew build
 ```
 
-The executable jar is written to:
-
-```text
-plaza-server/build/libs/plaza-bundler-<version>-mojmap.jar
-```
+If you intentionally need Paperweight's Mojmap bundler for local/internal testing,
+`./gradlew createMojmapBundlerJar` still exists, but it is not the distribution
+artifact.
 
 ## Who Plaza is for
 
