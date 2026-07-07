@@ -1,6 +1,6 @@
 # Plaza
 
-Plaza is a future [Paper](https://papermc.io/) fork designed for
+Plaza is a [Paper](https://papermc.io/) fork designed for
 **plugin-driven Minecraft servers**.
 
 It targets lobbies, hubs, minigames, map-rotation servers, empty worlds, and other
@@ -64,12 +64,23 @@ The initial target is Minecraft/Paper `1.21.11`.
 
 ## Status
 
-Plaza is currently in the planning/bootstrap stage. The repository will be
-scaffolded as a Paper fork before the first implementation work begins.
+Plaza is in early bootstrap stage. The repository now has a Paperweight patcher
+layout and basic Plaza branding:
 
-## Planned build workflow
+- executable Mojmap bundler builds as `plaza-bundler-...-mojmap.jar`;
+- server manifests use `Brand-Id: plazamc:plaza` and `Brand-Name: Plaza`;
+- Bukkit/Paper build info falls back to Plaza branding;
+- `/version` reports the server name from the Plaza brand;
+- the Minecraft client brand/F3 server brand is backed by Paper's
+  `getServerModName()` path, which now resolves to Plaza through build info;
+- `/plaza` is registered alongside `/paper` for compatibility.
 
-Once the Paper fork scaffold is added, the expected workflow will be similar to:
+## Build workflow
+
+Plaza tracks upstream Paper through the `paperCommit` property in
+`gradle.properties`.
+
+Apply patches and build an executable server jar with:
 
 ```bash
 ./gradlew applyAllPatches
@@ -77,7 +88,11 @@ Once the Paper fork scaffold is added, the expected workflow will be similar to:
 ./gradlew createMojmapBundlerJar
 ```
 
-Exact task names may change with the selected Paperweight version.
+The executable jar is written to:
+
+```text
+plaza-server/build/libs/plaza-bundler-<version>-mojmap.jar
+```
 
 ## Who Plaza is for
 

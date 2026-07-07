@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 12:00:00 +0200
+Subject: [PATCH] Brand server as Plaza
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+index 602d3ce..d5ac733 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
++++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+@@ -40,10 +40,10 @@ public class PaperVersionFetcher implements VersionFetcher {
+     private static final ComponentLogger COMPONENT_LOGGER = ComponentLogger.logger(LogManager.getRootLogger().getName());
+     private static final int DISTANCE_ERROR = -1;
+     private static final int DISTANCE_UNKNOWN = -2;
+-    private static final String DOWNLOAD_PAGE = "https://papermc.io/downloads/paper";
+-    private static final String REPOSITORY = "PaperMC/Paper";
++    private static final String DOWNLOAD_PAGE = "https://plazamc.org"; // Plaza - Rebrand
++    private static final String REPOSITORY = "PlazaMC/Plaza"; // Plaza - Rebrand
+     private static final ServerBuildInfo BUILD_INFO = ServerBuildInfo.buildInfo();
+-    private static final String USER_AGENT = BUILD_INFO.brandName() + "/" + BUILD_INFO.asString(VERSION_SIMPLE) + " (https://papermc.io)";
++    private static final String USER_AGENT = BUILD_INFO.brandName() + "/" + BUILD_INFO.asString(VERSION_SIMPLE) + " (https://plazamc.org)"; // Plaza - Rebrand
+     private static final Gson GSON = new Gson();
+ 
+     @Override
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+index 74ffdc8..255c3fc 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+@@ -31,6 +31,7 @@ public record ServerBuildInfoImpl(
+     private static final String ATTRIBUTE_GIT_COMMIT = "Git-Commit";
+ 
+     private static final String BRAND_PAPER_NAME = "Paper";
++    private static final String BRAND_PLAZA_NAME = "Plaza"; // Plaza - Rebrand
+ 
+     private static final String BUILD_DEV = "DEV";
+ 
+@@ -42,9 +43,9 @@ public record ServerBuildInfoImpl(
+         this(
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_ID)
+                 .map(Key::key)
+-                .orElse(BRAND_PAPER_ID),
++                .orElse(BRAND_PLAZA_ID), // Plaza - Rebrand
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_NAME)
+-                .orElse(BRAND_PAPER_NAME),
++                .orElse(BRAND_PLAZA_NAME), // Plaza - Rebrand
+             SharedConstants.getCurrentVersion().id(),
+             SharedConstants.getCurrentVersion().name(),
+             getManifestAttribute(manifest, ATTRIBUTE_BUILD_NUMBER)
+@@ -61,7 +62,7 @@ public record ServerBuildInfoImpl(
+ 
+     @Override
+     public boolean isBrandCompatible(final @NotNull Key brandId) {
+-        return brandId.equals(this.brandId);
++        return brandId.equals(this.brandId) || brandId.equals(BRAND_PAPER_ID); // Plaza - remain Paper-compatible
+     }
+ 
+     @Override
+diff --git a/src/main/java/io/papermc/paper/command/PaperCommands.java b/src/main/java/io/papermc/paper/command/PaperCommands.java
+index 6dfd0b1..7b791fc 100644
+--- a/src/main/java/io/papermc/paper/command/PaperCommands.java
++++ b/src/main/java/io/papermc/paper/command/PaperCommands.java
+@@ -22,11 +22,12 @@ public final class PaperCommands {
+     private static final Map<String, Command> COMMANDS = new HashMap<>();
+ 
+     public static void registerCommands(final MinecraftServer server) {
+-        COMMANDS.put("paper", new PaperCommand("paper"));
++        COMMANDS.put("paper", new PaperCommand("paper")); // Plaza - keep Paper command for compatibility
++        COMMANDS.put("plaza", new PaperCommand("plaza")); // Plaza - add branded command
+         COMMANDS.put("mspt", new MSPTCommand("mspt"));
+ 
+         COMMANDS.forEach((s, command) -> {
+-            server.server.getCommandMap().register(s, "Paper", command);
++            server.server.getCommandMap().register(s, "Plaza", command); // Plaza - Rebrand
+         });
+     }
+ 
+@@ -40,7 +41,7 @@ public final class PaperCommands {
+         io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.registerWithFlagsInternal(
+             null,
+             namespace,
+-            "Paper",
++            "Plaza", // Plaza - Rebrand
+             node,
+             description,
+             aliases,
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index 8ce8de8..a73c89b 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -198,7 +198,7 @@ public class Main {
+                     System.setProperty(net.minecrell.terminalconsole.TerminalConsoleAppender.JLINE_OVERRIDE_PROPERTY, "false"); // Paper
+                 }
+ 
+-                System.setProperty("library.jansi.version", "Paper"); // Paper - set meaningless jansi version to prevent git builds from crashing on Windows
++                System.setProperty("library.jansi.version", "Plaza"); // Plaza - Rebrand // Paper - set meaningless jansi version to prevent git builds from crashing on Windows
+                 System.setProperty("jdk.console", "java.base"); // Paper - revert default console provider back to java.base so we can have our own jline
+ 
+                 io.papermc.paper.PaperBootstrap.boot(options);
