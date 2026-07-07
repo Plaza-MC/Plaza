@@ -55,34 +55,6 @@ index 74ffdc8..255c3fc 100644
      }
  
      @Override
-diff --git a/src/main/java/io/papermc/paper/command/PaperCommands.java b/src/main/java/io/papermc/paper/command/PaperCommands.java
-index 6dfd0b1..7b791fc 100644
---- a/src/main/java/io/papermc/paper/command/PaperCommands.java
-+++ b/src/main/java/io/papermc/paper/command/PaperCommands.java
-@@ -22,11 +22,12 @@ public final class PaperCommands {
-     private static final Map<String, Command> COMMANDS = new HashMap<>();
- 
-     public static void registerCommands(final MinecraftServer server) {
--        COMMANDS.put("paper", new PaperCommand("paper"));
-+        COMMANDS.put("paper", new PaperCommand("paper")); // Plaza - keep Paper command for compatibility
-+        COMMANDS.put("plaza", new PaperCommand("plaza")); // Plaza - add branded command
-         COMMANDS.put("mspt", new MSPTCommand("mspt"));
- 
-         COMMANDS.forEach((s, command) -> {
--            server.server.getCommandMap().register(s, "Paper", command);
-+            server.server.getCommandMap().register(s, "Plaza", command); // Plaza - Rebrand
-         });
-     }
- 
-@@ -40,7 +41,7 @@ public final class PaperCommands {
-         io.papermc.paper.command.brigadier.PaperCommands.INSTANCE.registerWithFlagsInternal(
-             null,
-             namespace,
--            "Paper",
-+            "Plaza", // Plaza - Rebrand
-             node,
-             description,
-             aliases,
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
 index 8ce8de8..a73c89b 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java

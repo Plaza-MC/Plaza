@@ -4,18 +4,25 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-VERSION="$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n 1 | tr -d '\r')"
-if [[ -z "$VERSION" ]]; then
+PROJECT_VERSION="$(sed -n 's/^version[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n 1 | tr -d '\r')"
+if [[ -z "$PROJECT_VERSION" ]]; then
   echo "Could not read version from gradle.properties" >&2
   exit 1
 fi
 
-OUTPUT_DIR="$ROOT_DIR/build/libs"
-OUTPUT_JAR="$OUTPUT_DIR/plaza-server-${VERSION}.jar"
-PAPERCLIP_JAR="$ROOT_DIR/plaza-server/build/libs/plaza-paperclip-${VERSION}-mojmap.jar"
-LEGACY_OUTPUT_JAR="$ROOT_DIR/plaza-server-${VERSION}.jar"
+MC_VERSION="$(sed -n 's/^mcVersion[[:space:]]*=[[:space:]]*//p' gradle.properties | head -n 1 | tr -d '\r')"
+if [[ -z "$MC_VERSION" ]]; then
+  echo "Could not read mcVersion from gradle.properties" >&2
+  exit 1
+fi
 
-rm -f "$OUTPUT_JAR" "$LEGACY_OUTPUT_JAR"
+GIT_COMMIT="$(git rev-parse --short=7 HEAD)"
+
+OUTPUT_DIR="$ROOT_DIR/build/libs"
+OUTPUT_JAR="$OUTPUT_DIR/plaza-server-${MC_VERSION}-${GIT_COMMIT}.jar"
+PAPERCLIP_JAR="$ROOT_DIR/plaza-server/build/libs/plaza-paperclip-${PROJECT_VERSION}-mojmap.jar"
+
+rm -f "$OUTPUT_DIR"/plaza-server-*.jar "$ROOT_DIR"/plaza-server-*.jar
 
 # Avoid stale/confusing Paperweight jar outputs from previous manual builds.
 rm -f "$ROOT_DIR"/plaza-server/build/libs/*.jar 2>/dev/null || true

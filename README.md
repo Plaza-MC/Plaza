@@ -67,13 +67,13 @@ The initial target is Minecraft/Paper `1.21.11`.
 Plaza is in early bootstrap stage. The repository now has a Paperweight patcher
 layout and basic Plaza branding:
 
-- executable Paperclip distribution builds as `build/libs/plaza-server-<version>.jar`;
+- executable Paperclip distribution builds as `build/libs/plaza-server-<minecraft-version>-<commit>.jar`;
 - server manifests use `Brand-Id: plazamc:plaza` and `Brand-Name: Plaza`;
 - Bukkit/Paper build info falls back to Plaza branding;
 - `/version` reports the server name from the Plaza brand;
 - the Minecraft client brand/F3 server brand is backed by Paper's
   `getServerModName()` path, which now resolves to Plaza through build info;
-- `/plaza` is registered alongside `/paper` for compatibility.
+- Paper's existing `/paper` command remains available for compatibility.
 
 ## Build workflow
 
@@ -87,10 +87,11 @@ Build a distributable Paperclip server jar with:
 ```
 
 The script applies patches, runs `createMojmapPaperclipJar`, copies the Paperclip
-artifact to a clean distribution name, and prints the absolute path:
+artifact to a clean distribution name with the current Git commit, and prints the
+absolute path:
 
 ```text
-build/libs/plaza-server-<version>.jar
+build/libs/plaza-server-<minecraft-version>-<commit>.jar
 ```
 
 This is the preferred distribution artifact because it follows Paper's Paperclip
