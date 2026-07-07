@@ -13,6 +13,12 @@ fi
 OUTPUT_DIR="$ROOT_DIR/build/libs"
 OUTPUT_JAR="$OUTPUT_DIR/plaza-server-${VERSION}.jar"
 PAPERCLIP_JAR="$ROOT_DIR/plaza-server/build/libs/plaza-paperclip-${VERSION}-mojmap.jar"
+LEGACY_OUTPUT_JAR="$ROOT_DIR/plaza-server-${VERSION}.jar"
+
+rm -f "$OUTPUT_JAR" "$LEGACY_OUTPUT_JAR"
+
+# Avoid stale/confusing Paperweight jar outputs from previous manual builds.
+rm -f "$ROOT_DIR"/plaza-server/build/libs/*.jar 2>/dev/null || true
 
 echo "==> Applying Plaza/Paper patches"
 ./gradlew applyAllPatches
@@ -25,13 +31,26 @@ if [[ ! -f "$PAPERCLIP_JAR" ]]; then
   exit 1
 fi
 
+if ! unzip -p "$PAPERCLIP_JAR" META-INF/MANIFEST.MF | grep -q '^Main-Class: io.papermc.paperclip.Main'; then
+  echo "Refusing to publish $PAPERCLIP_JAR: it is not a Paperclip jar." >&2
+  exit 1
+fi
+
 mkdir -p "$OUTPUT_DIR"
 cp -f "$PAPERCLIP_JAR" "$OUTPUT_JAR"
+
+if ! unzip -p "$OUTPUT_JAR" META-INF/MANIFEST.MF | grep -q '^Main-Class: io.papermc.paperclip.Main'; then
+  echo "Refusing to publish $OUTPUT_JAR: final jar is not Paperclip." >&2
+  exit 1
+fi
 
 if jar tf "$OUTPUT_JAR" | grep -q '^net/minecraft/'; then
   echo "Refusing to publish $OUTPUT_JAR: it contains net.minecraft classes." >&2
   exit 1
 fi
+
+# Keep ./build.sh output unambiguous: only the clean distribution jar remains.
+rm -f "$ROOT_DIR"/plaza-server/build/libs/*.jar 2>/dev/null || true
 
 echo
 echo "Built: $OUTPUT_JAR"
