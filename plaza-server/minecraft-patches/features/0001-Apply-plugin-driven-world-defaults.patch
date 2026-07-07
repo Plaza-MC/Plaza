@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 15:35:00 +0200
+Subject: [PATCH] Apply plugin-driven world defaults
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index ca2caac..bbe64c8 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -662,7 +662,10 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         List<CustomSpawner> list = ImmutableList.of(
+             new PhantomSpawner(), new PatrolSpawner(), new CatSpawner(), new VillageSiege(), new WanderingTraderSpawner(serverLevelData)
+         );
+-        final org.bukkit.generator.ChunkGenerator chunkGenerator = this.server.getGenerator(loadingInfo.name());
++        org.bukkit.generator.ChunkGenerator chunkGenerator = this.server.getGenerator(loadingInfo.name());
++        if (chunkGenerator == null && org.plazamc.server.PlazaConfig.disableVanillaWorldGeneration()) { // Plaza - plugin-driven defaults
++            chunkGenerator = new org.plazamc.server.generator.PlazaVoidChunkGenerator();
++        }
+         org.bukkit.generator.BiomeProvider biomeProvider = this.server.getBiomeProvider(loadingInfo.name());
+         final org.bukkit.generator.WorldInfo worldInfo = new org.bukkit.craftbukkit.generator.CraftWorldInfo(
+             serverLevelData,
+diff --git a/net/minecraft/server/level/ServerChunkCache.java b/net/minecraft/server/level/ServerChunkCache.java
+index af67b07..044c361 100644
+--- a/net/minecraft/server/level/ServerChunkCache.java
++++ b/net/minecraft/server/level/ServerChunkCache.java
+@@ -529,10 +529,11 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
+ 
+     private void tickChunks(ProfilerFiller profiler, long timeInhabited) {
+         profiler.push("naturalSpawnCount");
+-        int naturalSpawnChunkCount = this.distanceManager.getNaturalSpawnChunkCount();
++        final boolean plazaDisableNaturalSpawning = org.plazamc.server.PlazaConfig.disableNaturalSpawning(); // Plaza - plugin-driven defaults
++        int naturalSpawnChunkCount = plazaDisableNaturalSpawning ? 0 : this.distanceManager.getNaturalSpawnChunkCount(); // Plaza - plugin-driven defaults
+         // Paper start - Optional per player mob spawns
+         NaturalSpawner.SpawnState spawnState;
+-        if ((this.spawnFriendlies || this.spawnEnemies) && this.level.paperConfig().entities.spawning.perPlayerMobSpawns) { // don't count mobs when animals and monsters are disabled
++        if (!plazaDisableNaturalSpawning && (this.spawnFriendlies || this.spawnEnemies) && this.level.paperConfig().entities.spawning.perPlayerMobSpawns) { // don't count mobs when animals and monsters are disabled // Plaza - plugin-driven defaults
+             // re-set mob counts
+             for (ServerPlayer player : this.level.players) {
+                 // Paper start - per player mob spawning backoff
+@@ -556,7 +557,7 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
+         boolean flag = this.level.getGameRules().get(GameRules.SPAWN_MOBS) && !this.level.players().isEmpty(); // CraftBukkit
+         int i = this.level.getGameRules().get(GameRules.RANDOM_TICK_SPEED);
+         List<MobCategory> filteredSpawningCategories;
+-        if (flag && (this.spawnEnemies || this.spawnFriendlies)) { // Paper
++        if (!plazaDisableNaturalSpawning && flag && (this.spawnEnemies || this.spawnFriendlies)) { // Paper // Plaza - plugin-driven defaults
+             // Paper start - PlayerNaturallySpawnCreaturesEvent
+             for (ServerPlayer entityPlayer : this.level.players()) {
+                 int chunkRange = Math.min(level.spigotConfig.mobSpawnRange, entityPlayer.getBukkitEntity().getViewDistance());
+@@ -592,7 +593,7 @@ public class ServerChunkCache extends ChunkSource implements ca.spottedleaf.moon
+ 
+         profiler.popPush("tickTickingChunks");
+         this.iterateTickingChunksFaster(); // Paper - chunk tick iteration optimizations
+-        if (flag) {
++        if (!plazaDisableNaturalSpawning && flag) { // Plaza - plugin-driven defaults
+             profiler.popPush("customSpawners");
+             this.level.tickCustomSpawners(this.spawnEnemies);
+         }
+diff --git a/net/minecraft/world/entity/Mob.java b/net/minecraft/world/entity/Mob.java
+index 92175cc..8d28ee5 100644
+--- a/net/minecraft/world/entity/Mob.java
++++ b/net/minecraft/world/entity/Mob.java
+@@ -162,6 +162,9 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+         this.navigation = this.createNavigation(level);
+         this.sensing = new Sensing(this);
+         if (level instanceof ServerLevel) {
++            if (org.plazamc.server.PlazaConfig.disableMobAiByDefault()) { // Plaza - plugin-driven defaults
++                this.setNoAi(true);
++            }
+             this.registerGoals();
+         }
+     }

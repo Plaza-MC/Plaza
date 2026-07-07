@@ -52,12 +52,27 @@ public final class PlazaConfig {
         return config().getBoolean("slime-worlds.enabled", true);
     }
 
+    public static boolean disableDefaultNether() {
+        return config().getBoolean("plugin-driven.disable-default-nether", true);
+    }
+
+    public static boolean disableDefaultEnd() {
+        return config().getBoolean("plugin-driven.disable-default-end", true);
+    }
+
+    public static boolean spawnPlatformEnabled() {
+        return config().getBoolean("plugin-driven.spawn-platform.enabled", true);
+    }
+
     private static void addDefaults(final YamlConfiguration config) {
         config.addDefault("config-version", 1);
 
         config.addDefault("plugin-driven.disable-vanilla-world-generation", true);
         config.addDefault("plugin-driven.disable-natural-spawning", true);
         config.addDefault("plugin-driven.disable-mob-ai-by-default", true);
+        config.addDefault("plugin-driven.disable-default-nether", true);
+        config.addDefault("plugin-driven.disable-default-end", true);
+        config.addDefault("plugin-driven.spawn-platform.enabled", true);
 
         config.addDefault("slime-worlds.enabled", true);
         config.addDefault("slime-worlds.storage", "file");
