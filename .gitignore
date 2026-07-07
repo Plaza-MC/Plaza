@@ -41,8 +41,11 @@ manifest.mf
 .*.sw[a-p]
 *~
 
-# Plaza/Paperweight generated sources
+# Plaza/Paperweight generated sources and local server run output
 /run
+/cache
+/logs
+/plugins
 /paper-api
 /paper-server
 /plaza-api/build.gradle.kts

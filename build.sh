@@ -10,8 +10,9 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-OUTPUT_JAR="plaza-server-${VERSION}.jar"
-PAPERCLIP_JAR="plaza-server/build/libs/plaza-paperclip-${VERSION}-mojmap.jar"
+OUTPUT_DIR="$ROOT_DIR/build/libs"
+OUTPUT_JAR="$OUTPUT_DIR/plaza-server-${VERSION}.jar"
+PAPERCLIP_JAR="$ROOT_DIR/plaza-server/build/libs/plaza-paperclip-${VERSION}-mojmap.jar"
 
 echo "==> Applying Plaza/Paper patches"
 ./gradlew applyAllPatches
@@ -24,6 +25,7 @@ if [[ ! -f "$PAPERCLIP_JAR" ]]; then
   exit 1
 fi
 
+mkdir -p "$OUTPUT_DIR"
 cp -f "$PAPERCLIP_JAR" "$OUTPUT_JAR"
 
 if jar tf "$OUTPUT_JAR" | grep -q '^net/minecraft/'; then
@@ -33,4 +35,3 @@ fi
 
 echo
 echo "Built: $OUTPUT_JAR"
-echo "Run with: java -jar $OUTPUT_JAR"
