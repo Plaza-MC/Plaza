@@ -64,6 +64,26 @@ public final class PlazaConfig {
         return config().getBoolean("plugin-driven.spawn-platform.enabled", true);
     }
 
+    public static boolean dynamicWorldBorderEnabled() {
+        return config().getBoolean("plugin-driven.dynamic-world-border.enabled", true);
+    }
+
+    public static int dynamicWorldBorderMargin() {
+        return config().getInt("plugin-driven.dynamic-world-border.margin-blocks", 8);
+    }
+
+    public static double dynamicWorldBorderMinimumSize() {
+        return config().getDouble("plugin-driven.dynamic-world-border.minimum-size", 16.0D);
+    }
+
+    public static long dynamicWorldBorderRecalculationIntervalTicks() {
+        return config().getLong("plugin-driven.dynamic-world-border.recalculation-interval-ticks", 20L);
+    }
+
+    public static int dynamicWorldBorderMaxChunksScanned() {
+        return config().getInt("plugin-driven.dynamic-world-border.max-chunks-scanned", 1024);
+    }
+
     private static void addDefaults(final YamlConfiguration config) {
         config.addDefault("config-version", 1);
 
@@ -73,6 +93,11 @@ public final class PlazaConfig {
         config.addDefault("plugin-driven.disable-default-nether", true);
         config.addDefault("plugin-driven.disable-default-end", true);
         config.addDefault("plugin-driven.spawn-platform.enabled", true);
+        config.addDefault("plugin-driven.dynamic-world-border.enabled", true);
+        config.addDefault("plugin-driven.dynamic-world-border.margin-blocks", 8);
+        config.addDefault("plugin-driven.dynamic-world-border.minimum-size", 16.0D);
+        config.addDefault("plugin-driven.dynamic-world-border.recalculation-interval-ticks", 20L);
+        config.addDefault("plugin-driven.dynamic-world-border.max-chunks-scanned", 1024);
 
         config.addDefault("slime-worlds.enabled", true);
         config.addDefault("slime-worlds.storage", "file");

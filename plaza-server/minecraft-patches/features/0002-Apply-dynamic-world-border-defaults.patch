@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 15:50:00 +0200
+Subject: [PATCH] Apply dynamic world border defaults
+
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index bbe64c8..83872b4 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -915,6 +915,8 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         serverLevel.levelLoadListener.finish(LevelLoadListener.Stage.LOAD_INITIAL_CHUNKS); // Paper - per world load listener
+         serverLevel.setSpawnSettings(serverLevel.isSpawningMonsters()); // Paper - per level difficulty (from setDifficulty(ServerLevel, Difficulty, boolean))
+         this.updateEffectiveRespawnData();
++        org.plazamc.server.world.PlazaWorldDefaults.applyOnWorldLoad(serverLevel); // Plaza - plugin-driven world defaults
++        this.updateEffectiveRespawnData(); // Plaza - plugin-driven world defaults
+         this.forceTicks = false; // CraftBukkit
+         //serverLevel.entityManager.tick(); // SPIGOT-6526: Load pending entities so they are available to the API // Paper - rewrite chunk system
+         new org.bukkit.event.world.WorldLoadEvent(serverLevel.getWorld()).callEvent(); // Paper - call WorldLoadEvent
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index dc65503..a795cee 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -754,6 +754,7 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         if (runsNormally) {
+             profilerFiller.push("world border");
+             this.getWorldBorder().tick();
++            org.plazamc.server.world.PlazaWorldDefaults.tickDynamicWorldBorder(this); // Plaza - dynamic world border
+             profilerFiller.popPush("weather");
+             this.advanceWeatherCycle();
+             profilerFiller.pop();

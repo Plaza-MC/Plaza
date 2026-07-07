@@ -16,9 +16,9 @@ import org.jetbrains.annotations.NotNull;
  * Empty Bukkit generator used by Plaza's plugin-driven default profile.
  */
 public final class PlazaVoidChunkGenerator extends ChunkGenerator {
-    private static final int PLATFORM_Y = 63;
-    private static final int PLATFORM_RADIUS = 2;
-    private static final Material PLATFORM_MATERIAL = Material.GLASS;
+    public static final int PLATFORM_Y = 63;
+    public static final int PLATFORM_RADIUS = 2;
+    public static final Material PLATFORM_MATERIAL = Material.GLASS;
 
     @Override
     public @NotNull List<BlockPopulator> getDefaultPopulators(final @NotNull World world) {
