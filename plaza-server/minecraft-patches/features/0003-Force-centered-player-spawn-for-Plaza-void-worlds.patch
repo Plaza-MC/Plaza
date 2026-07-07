@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 16:15:00 +0200
+Subject: [PATCH] Force centered player spawn for Plaza void worlds
+
+PlayerSpawnFinder searches for a safe spawn position in a radius around the
+world spawn and uses a random offset, which causes new players to land on
+slightly different blocks every time the world is regenerated. For Plaza's
+plugin-driven void world the spawn point is already fixed at the center of the
+glass platform, so skip the search and place the player exactly there.
+
+
+diff --git a/net/minecraft/server/network/config/PrepareSpawnTask.java b/net/minecraft/server/network/config/PrepareSpawnTask.java
+index 00000000..00000000 100644
+--- a/net/minecraft/server/network/config/PrepareSpawnTask.java
++++ b/net/minecraft/server/network/config/PrepareSpawnTask.java
+@@ -109,7 +109,14 @@ public class PrepareSpawnTask implements ConfigurationTask {
+             // Paper end - move logic in Entity to here, to use bukkit supplied world UUID & reset to main world spawn if no valid world is found
+             CompletableFuture<Vec3> completableFuture = savedPosition.position()
+                 .map(CompletableFuture::completedFuture)
+-                .orElseGet(() -> PlayerSpawnFinder.findSpawn(serverLevel, respawnData.pos()));
++                .orElseGet(() -> {
++                    // Plaza start - plugin-driven world defaults: force exact centered spawn for void worlds
++                    if (serverLevel.generator instanceof org.plazamc.server.generator.PlazaVoidChunkGenerator) {
++                        return CompletableFuture.completedFuture(Vec3.atBottomCenterOf(respawnData.pos()));
++                    }
++                    // Plaza end
++                    return PlayerSpawnFinder.findSpawn(serverLevel, respawnData.pos());
++                });
+             Vec2 vec2 = savedPosition.rotation().orElse(new Vec2(respawnData.yaw(), respawnData.pitch()));
+             this.state = new PrepareSpawnTask.Preparing(serverLevel, completableFuture, vec2);
+         }
