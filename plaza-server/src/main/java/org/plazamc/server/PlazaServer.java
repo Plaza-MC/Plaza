@@ -1,4 +1,4 @@
-package org.plazamc.plaza;
+package org.plazamc.server;
 
 /**
  * Marker class for Plaza server-specific code.

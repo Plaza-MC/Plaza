@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 15:15:00 +0200
+Subject: [PATCH] Add Plaza configuration and command
+
+
+diff --git a/src/main/java/io/papermc/paper/command/PaperCommands.java b/src/main/java/io/papermc/paper/command/PaperCommands.java
+index 6dfd0b1..088db88 100644
+--- a/src/main/java/io/papermc/paper/command/PaperCommands.java
++++ b/src/main/java/io/papermc/paper/command/PaperCommands.java
+@@ -22,12 +22,16 @@ public final class PaperCommands {
+     private static final Map<String, Command> COMMANDS = new HashMap<>();
+ 
+     public static void registerCommands(final MinecraftServer server) {
++        org.plazamc.server.PlazaConfig.load(); // Plaza - configuration
++
+         COMMANDS.put("paper", new PaperCommand("paper"));
+         COMMANDS.put("mspt", new MSPTCommand("mspt"));
+ 
+         COMMANDS.forEach((s, command) -> {
+             server.server.getCommandMap().register(s, "Paper", command);
+         });
++
++        server.server.getCommandMap().register("plaza", "Plaza", new org.plazamc.server.command.PlazaCommand("plaza")); // Plaza - command
+     }
+ 
+     public static void registerCommands() {
