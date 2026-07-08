@@ -8,11 +8,12 @@ import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.bukkit.World;
+import org.plazamc.api.exceptions.UnknownWorldException;
 import org.plazamc.server.PlazaConfig;
+import org.plazamc.server.world.PlazaWorldManager;
 import org.plazamc.server.world.PlazaWorldShadow;
+import org.plazamc.server.world.loader.PlazaFileWorldLoader;
 import org.plazamc.server.slime.loader.PlazaSlimeLoader;
-import org.plazamc.server.slime.loader.PlazaUnknownWorldException;
-import org.plazamc.server.slime.loader.file.PlazaFileSlimeLoader;
 import org.plazamc.server.slime.nms.PlazaSlimeNMSBridge;
 import org.plazamc.server.slime.properties.PlazaSlimeProperties;
 import org.plazamc.server.slime.properties.PlazaSlimePropertyMap;
@@ -27,6 +28,8 @@ public final class PlazaSlimeWorldBootstrap {
     }
 
     public static void bootstrapDefaultWorlds(final MinecraftServer server) {
+        PlazaWorldManager.init();
+
         if (!PlazaConfig.slimeWorldsEnabled()) {
             return;
         }
@@ -68,7 +71,7 @@ public final class PlazaSlimeWorldBootstrap {
         if (!"file".equalsIgnoreCase(storage)) {
             throw new UnsupportedOperationException("Plaza world source '" + storage + "' is not supported yet.");
         }
-        return new PlazaFileSlimeLoader(PlazaConfig.plazaWorldsFilePath());
+        return new PlazaFileWorldLoader(PlazaConfig.plazaWorldsFilePath());
     }
 
     public static PlazaSlimeWorld loadOrCreateWorld(final PlazaSlimeLoader loader, final String name,
@@ -77,7 +80,7 @@ public final class PlazaSlimeWorldBootstrap {
         final boolean shadowExists = PlazaWorldShadow.exists(name);
 
         try {
-            final byte[] data = loader.readWorld(name);
+            final byte[] data = loader.readWorldBytes(name);
 
             if (createShadow && !shadowExists) {
                 // The shadow folder was deleted by a legacy plugin; treat that as
@@ -98,7 +101,7 @@ public final class PlazaSlimeWorldBootstrap {
                 PlazaWorldShadow.create(name);
             }
             return world;
-        } catch (final PlazaUnknownWorldException ex) {
+        } catch (final UnknownWorldException ex) {
             if (createShadow && shadowExists) {
                 // The Slime file is gone but the shadow folder remains; clean up.
                 PlazaWorldShadow.delete(name);

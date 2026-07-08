@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/Plaza-MC/.github/refs/heads/main/profile/assets/plaza.png" alt="Plaza" width="420">
-  <p>A Paper fork focused on plugin-driven Minecraft servers.</p>
+  <p>A lightweight Paper fork optimized for non vanilla servers.</p>
   <p>
     <a href="https://plazamc.org">Plaza</a> ·
     <a href="https://blueva.net">Blueva (central org)</a> ·
@@ -18,7 +18,7 @@
 
 ---
 
-Plaza is a Paper fork focused on plugin-driven Minecraft servers.
+Plaza is a lightweight Paper fork optimized for non vanilla servers
 
 The project targets lobbies, hubs, minigames, template worlds, and other server
 setups where plugins own most gameplay logic and vanilla simulation is not the

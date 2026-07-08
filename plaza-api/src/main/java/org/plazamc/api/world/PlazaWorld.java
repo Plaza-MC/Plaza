@@ -5,6 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.exceptions.WorldAlreadyExistsException;
 
+import java.io.IOException;
+
 /**
  * In-memory representation of a Plaza world, independent of the storage format.
  */
@@ -72,10 +74,10 @@ public interface PlazaWorld extends PersistentDataHolder {
      * @param worldName The new name.
      * @param loader    The target loader, or {@code null} for a temporary clone.
      * @return The cloned world.
-     * @throws IllegalArgumentException        if the name is invalid.
-     * @throws WorldAlreadyExistsException     if the world already exists.
-     * @throws java.io.IOException             if the world could not be saved.
+     * @throws IllegalArgumentException    if the name is invalid.
+     * @throws WorldAlreadyExistsException if the world already exists.
+     * @throws IOException                 if the world could not be saved.
      */
     @NotNull
-    PlazaWorld clone(@NotNull String worldName, @Nullable PlazaWorldLoader loader) throws WorldAlreadyExistsException, java.io.IOException;
+    PlazaWorld clone(@NotNull String worldName, @Nullable PlazaWorldLoader loader) throws WorldAlreadyExistsException, IOException;
 }

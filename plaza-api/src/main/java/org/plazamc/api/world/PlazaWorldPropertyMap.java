@@ -4,107 +4,54 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generic typed property map used by Plaza worlds. Format-specific
- * implementations may extend this class to add their own properties.
+ * implementations may provide their own backing storage while exposing
+ * the same interface.
  */
-public class PlazaWorldPropertyMap {
+public interface PlazaWorldPropertyMap {
 
-    private final Map<String, Object> values = new ConcurrentHashMap<>();
-
-    public boolean has(@NotNull String key) {
-        return this.values.containsKey(key);
-    }
+    boolean has(@NotNull String key);
 
     @Nullable
-    public Object get(@NotNull String key) {
-        return this.values.get(key);
-    }
+    Object get(@NotNull String key);
 
-    public void set(@NotNull String key, @Nullable Object value) {
-        if (value == null) {
-            this.values.remove(key);
-        } else {
-            this.values.put(key, value);
-        }
-    }
+    void set(@NotNull String key, @Nullable Object value);
 
-    public void setString(@NotNull String key, @Nullable String value) {
-        set(key, value);
-    }
+    void setString(@NotNull String key, @Nullable String value);
 
     @NotNull
-    public String getString(@NotNull String key, @NotNull String defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof String ? (String) value : defaultValue;
-    }
+    String getString(@NotNull String key, @NotNull String defaultValue);
 
     @Nullable
-    public String getString(@NotNull String key) {
-        Object value = this.values.get(key);
-        return value instanceof String ? (String) value : null;
-    }
+    String getString(@NotNull String key);
 
-    public void setInt(@NotNull String key, int value) {
-        set(key, value);
-    }
+    void setInt(@NotNull String key, int value);
 
-    public int getInt(@NotNull String key, int defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof Number ? ((Number) value).intValue() : defaultValue;
-    }
+    int getInt(@NotNull String key, int defaultValue);
 
-    public void setLong(@NotNull String key, long value) {
-        set(key, value);
-    }
+    void setLong(@NotNull String key, long value);
 
-    public long getLong(@NotNull String key, long defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof Number ? ((Number) value).longValue() : defaultValue;
-    }
+    long getLong(@NotNull String key, long defaultValue);
 
-    public void setFloat(@NotNull String key, float value) {
-        set(key, value);
-    }
+    void setFloat(@NotNull String key, float value);
 
-    public float getFloat(@NotNull String key, float defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof Number ? ((Number) value).floatValue() : defaultValue;
-    }
+    float getFloat(@NotNull String key, float defaultValue);
 
-    public void setDouble(@NotNull String key, double value) {
-        set(key, value);
-    }
+    void setDouble(@NotNull String key, double value);
 
-    public double getDouble(@NotNull String key, double defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof Number ? ((Number) value).doubleValue() : defaultValue;
-    }
+    double getDouble(@NotNull String key, double defaultValue);
 
-    public void setBoolean(@NotNull String key, boolean value) {
-        set(key, value);
-    }
+    void setBoolean(@NotNull String key, boolean value);
 
-    public boolean getBoolean(@NotNull String key, boolean defaultValue) {
-        Object value = this.values.get(key);
-        return value instanceof Boolean ? (Boolean) value : defaultValue;
-    }
+    boolean getBoolean(@NotNull String key, boolean defaultValue);
 
     @NotNull
-    public Map<String, Object> asMap() {
-        return new ConcurrentHashMap<>(this.values);
-    }
+    Map<String, Object> asMap();
 
-    public void merge(@NotNull PlazaWorldPropertyMap other) {
-        this.values.putAll(other.asMap());
-    }
+    void merge(@NotNull PlazaWorldPropertyMap other);
 
     @NotNull
-    public PlazaWorldPropertyMap copy() {
-        PlazaWorldPropertyMap copy = new PlazaWorldPropertyMap();
-        copy.merge(this);
-        return copy;
-    }
+    PlazaWorldPropertyMap copy();
 }

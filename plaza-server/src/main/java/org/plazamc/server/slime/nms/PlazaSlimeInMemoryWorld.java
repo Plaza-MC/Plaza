@@ -24,7 +24,8 @@ import org.plazamc.server.slime.PlazaSlimeChunk;
 import org.plazamc.server.slime.PlazaSlimeWorld;
 import org.plazamc.server.slime.format.PlazaSlimeSerializer;
 import org.plazamc.server.slime.loader.PlazaSlimeLoader;
-import org.plazamc.server.slime.loader.PlazaWorldAlreadyExistsException;
+import org.plazamc.api.exceptions.WorldAlreadyExistsException;
+import org.plazamc.api.world.PlazaWorldLoader;
 import org.plazamc.server.slime.nms.chunk.PlazaFastChunkPruner;
 import org.plazamc.server.slime.nms.chunk.PlazaNMSSlimeChunk;
 import org.plazamc.server.slime.nms.chunk.PlazaPartiallySerializedSlimeChunk;
@@ -242,26 +243,29 @@ public final class PlazaSlimeInMemoryWorld implements PlazaSlimeWorld {
     public PlazaSlimeWorld clone(String worldName) {
         try {
             return clone(worldName, null);
-        } catch (PlazaWorldAlreadyExistsException | IOException ignored) {
+        } catch (WorldAlreadyExistsException | IOException ignored) {
             return null;
         }
     }
 
     @Override
-    public PlazaSlimeWorld clone(String worldName, PlazaSlimeLoader loader) throws PlazaWorldAlreadyExistsException, IOException {
+    public PlazaSlimeWorld clone(String worldName, PlazaWorldLoader loader) throws WorldAlreadyExistsException, IOException {
         if (this.getName().equals(worldName)) {
             throw new IllegalArgumentException("The clone world cannot have the same name as the original world!");
         }
         if (worldName == null) {
             throw new IllegalArgumentException("The world name cannot be null!");
         }
-        if (loader != null && loader.worldExists(worldName)) {
-            throw new PlazaWorldAlreadyExistsException(worldName);
+        if (!(loader instanceof PlazaSlimeLoader slimeLoader)) {
+            throw new IllegalArgumentException("Cannot clone a Slime world into a non-Slime loader");
+        }
+        if (slimeLoader != null && slimeLoader.worldExists(worldName)) {
+            throw new WorldAlreadyExistsException(worldName);
         }
 
-        PlazaSlimeWorld cloned = PlazaSkeletonCloning.fullClone(worldName, this, loader, false);
-        if (loader != null) {
-            loader.saveWorld(worldName, PlazaSlimeSerializer.serialize(cloned));
+        PlazaSlimeWorld cloned = PlazaSkeletonCloning.fullClone(worldName, this, slimeLoader, false);
+        if (slimeLoader != null) {
+            slimeLoader.saveWorld(worldName, PlazaSlimeSerializer.serialize(cloned));
         }
 
         return cloned;

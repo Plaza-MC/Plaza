@@ -39,7 +39,7 @@ public final class PlazaWorldProperties {
      */
     @NotNull
     public static PlazaWorldPropertyMap defaults() {
-        PlazaWorldPropertyMap map = new PlazaWorldPropertyMap();
+        PlazaWorldPropertyMap map = new PlazaWorldPropertyMapImpl();
         map.setString(PlazaWorldProperties.DIFFICULTY, "peaceful");
         map.setBoolean(PlazaWorldProperties.PVP, false);
         map.setString(PlazaWorldProperties.ENVIRONMENT, "normal");
