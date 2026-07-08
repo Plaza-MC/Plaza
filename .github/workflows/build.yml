@@ -10,8 +10,11 @@ on:
 
 jobs:
   build:
+    if: "github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[CI-SKIP]')"
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,9 +40,12 @@ jobs:
       - name: Build distribution jar
         run: ./build.sh
 
-      - name: Upload Plaza jar
-        uses: actions/upload-artifact@v4
+      - name: Create release
+        if: "github.event_name == 'push'"
+        uses: softprops/action-gh-release@v2
         with:
-          name: plaza-server-jar
-          path: build/libs/plaza-server-*.jar
-          if-no-files-found: error
+          files: build/libs/plaza-server-*.jar
+          tag_name: build-${{ github.sha }}
+          name: Plaza ${{ github.sha }}
+          draft: false
+          prerelease: true
