@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
+import org.bukkit.World;
 import org.plazamc.server.PlazaConfig;
 import org.plazamc.server.slime.loader.PlazaSlimeLoader;
 import org.plazamc.server.slime.loader.PlazaUnknownWorldException;
@@ -38,9 +39,24 @@ public final class PlazaSlimeWorldBootstrap {
         final String levelName = ((DedicatedServer) server).getProperties().levelName;
         final PlazaSlimeLoader loader = createLoader();
 
-        final PlazaSlimeWorld overworld = loadOrCreateDefaultWorld(loader, levelName, org.bukkit.World.Environment.NORMAL);
+        final PlazaSlimeWorld overworld = loadOrCreateWorld(loader, levelName, World.Environment.NORMAL);
         // Plaza design decision: default Nether and End are always disabled.
         PlazaSlimeNMSBridge.instance().setDefaultWorlds(overworld, null, null);
+    }
+
+    /**
+     * Creates or loads a Slime world with the given name and environment, then
+     * returns its Bukkit {@link World}. This is used for worlds created through
+     * the Bukkit API when {@code world.default-format} is {@code SLIME}.
+     */
+    public static World createOrLoadWorld(final String name, final World.Environment environment) {
+        if (!PlazaConfig.slimeWorldsEnabled()) {
+            throw new IllegalStateException("Slime worlds are disabled in plaza.yml");
+        }
+
+        final PlazaSlimeLoader loader = createLoader();
+        final PlazaSlimeWorld world = loadOrCreateWorld(loader, name, environment);
+        return PlazaSlimeNMSBridge.instance().loadInstance(world).getInstance().getWorld();
     }
 
     private static PlazaSlimeLoader createLoader() {
@@ -51,8 +67,8 @@ public final class PlazaSlimeWorldBootstrap {
         return new PlazaFileSlimeLoader(PlazaConfig.slimeWorldsDirectory());
     }
 
-    private static PlazaSlimeWorld loadOrCreateDefaultWorld(final PlazaSlimeLoader loader, final String name,
-                                                            final org.bukkit.World.Environment environment) {
+    public static PlazaSlimeWorld loadOrCreateWorld(final PlazaSlimeLoader loader, final String name,
+                                                    final World.Environment environment) {
         try {
             final byte[] data = loader.readWorld(name);
             return org.plazamc.server.slime.format.reader.PlazaSlimeWorldReaderRegistry.readWorld(loader, name, data, new PlazaSlimePropertyMap(), false);
@@ -64,7 +80,7 @@ public final class PlazaSlimeWorldBootstrap {
     }
 
     private static PlazaSlimeWorld createDefaultWorld(final PlazaSlimeLoader loader, final String name,
-                                                      final org.bukkit.World.Environment environment) {
+                                                      final World.Environment environment) {
         final PlazaSlimePropertyMap properties = new PlazaSlimePropertyMap();
         properties.setValue(PlazaSlimeProperties.ENVIRONMENT, environment.name().toLowerCase());
         properties.setValue(PlazaSlimeProperties.DIFFICULTY, "peaceful");

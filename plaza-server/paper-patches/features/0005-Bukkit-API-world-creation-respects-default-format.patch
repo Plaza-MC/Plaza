@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Wed, 8 Jul 2026 10:30:00 +0200
+Subject: [PATCH] Bukkit API world creation respects default format
+
+
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1197,6 +1197,8 @@ public class CraftServer implements Server {
+             Preconditions.checkArgument(folder.isDirectory(), "File (%s) exists and isn't a folder", name);
+         }
+ 
++        final boolean plazaExplicitGenerator = creator.generator() != null; // Plaza
++        final boolean plazaBukkitYmlGenerator = chunkGenerator != null; // Plaza
+         if (chunkGenerator == null) {
+             chunkGenerator = this.getGenerator(name);
+         }
+@@ -1205,6 +1207,17 @@ public class CraftServer implements Server {
+             biomeProvider = this.getBiomeProvider(name);
+         }
+ 
++        // Plaza start - default world format and void generator
++        if (chunkGenerator == null) {
++            chunkGenerator = new org.plazamc.server.generator.PlazaVoidChunkGenerator();
++        }
++        if ("SLIME".equalsIgnoreCase(org.plazamc.server.PlazaConfig.worldDefaultFormat())
++                && !plazaExplicitGenerator
++                && !plazaBukkitYmlGenerator) {
++            return org.plazamc.server.slime.PlazaSlimeWorldBootstrap.createOrLoadWorld(name, creator.environment());
++        }
++        // Plaza end
++
+         ResourceKey<LevelStem> actualDimension = switch (creator.environment()) {
+             case NORMAL -> LevelStem.OVERWORLD;
+             case NETHER -> LevelStem.NETHER;
