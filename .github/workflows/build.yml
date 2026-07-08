@@ -29,6 +29,11 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "PlazaMC CI"
+          git config --global user.email "ci@plazamc.org"
+
       - name: Build distribution jar
         run: ./build.sh
 
