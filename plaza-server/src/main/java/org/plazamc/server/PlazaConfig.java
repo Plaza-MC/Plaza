@@ -7,10 +7,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * Minimal Plaza configuration bootstrap.
+ * Plaza configuration.
  */
 public final class PlazaConfig {
     private static final File CONFIG_FILE = new File("plaza.yml");
+    private static final int CURRENT_CONFIG_VERSION = 2;
     private static YamlConfiguration config;
 
     private PlazaConfig() {
@@ -21,6 +22,7 @@ public final class PlazaConfig {
         config.options().header("Plaza configuration");
         config.options().copyDefaults(true);
 
+        migrate();
         addDefaults(config);
         save();
     }
@@ -36,105 +38,281 @@ public final class PlazaConfig {
         return config;
     }
 
-    public static boolean disableVanillaWorldGeneration() {
-        return config().getBoolean("plugin-driven.disable-vanilla-world-generation", true);
-    }
+    // World format configuration
 
-    public static boolean disableNaturalSpawning() {
-        return config().getBoolean("plugin-driven.disable-natural-spawning", true);
-    }
-
-    public static boolean disableMobAiByDefault() {
-        return config().getBoolean("plugin-driven.disable-mob-ai-by-default", true);
+    public static String worldDefaultFormat() {
+        return config().getString("world.default-format", "SLIME").toUpperCase();
     }
 
     public static boolean slimeWorldsEnabled() {
-        return config().getBoolean("slime-worlds.enabled", true);
+        return config().getBoolean("world.formats.slime.enabled", true);
     }
 
     public static String slimeWorldsStorage() {
-        return config().getString("slime-worlds.storage", "file");
+        return config().getString("world.formats.slime.storage", "file");
     }
 
     public static File slimeWorldsDirectory() {
-        return new File(config().getString("slime-worlds.worlds-directory", "slime_worlds"));
+        return new File(config().getString("world.formats.slime.worlds-directory", "slime_worlds"));
     }
 
     public static String slimeDefaultBiome() {
-        return config().getString("slime-worlds.default-biome", "minecraft:plains");
+        return config().getString("world.formats.slime.default-biome", "minecraft:plains");
     }
 
     public static boolean slimeReadOnly() {
-        return config().getBoolean("slime-worlds.read-only", false);
+        return config().getBoolean("world.formats.slime.read-only", false);
     }
 
     public static boolean slimeSavePoi() {
-        return config().getBoolean("slime-worlds.save-poi", true);
+        return config().getBoolean("world.formats.slime.save-poi", true);
     }
 
     public static boolean slimeSaveBlockTicks() {
-        return config().getBoolean("slime-worlds.save-block-ticks", false);
+        return config().getBoolean("world.formats.slime.save-block-ticks", false);
     }
 
     public static boolean slimeSaveFluidTicks() {
-        return config().getBoolean("slime-worlds.save-fluid-ticks", false);
+        return config().getBoolean("world.formats.slime.save-fluid-ticks", false);
     }
 
-    public static boolean disableDefaultNether() {
-        return config().getBoolean("plugin-driven.disable-default-nether", true);
-    }
-
-    public static boolean disableDefaultEnd() {
-        return config().getBoolean("plugin-driven.disable-default-end", true);
+    public static boolean anvilWorldsEnabled() {
+        return config().getBoolean("world.formats.anvil.enabled", false);
     }
 
     public static boolean spawnPlatformEnabled() {
-        return config().getBoolean("plugin-driven.spawn-platform.enabled", true);
+        return config().getBoolean("world.spawn-platform.enabled", true);
     }
 
     public static boolean dynamicWorldBorderEnabled() {
-        return config().getBoolean("plugin-driven.dynamic-world-border.enabled", true);
+        return config().getBoolean("world.dynamic-world-border.enabled", true);
     }
 
     public static int dynamicWorldBorderMargin() {
-        return config().getInt("plugin-driven.dynamic-world-border.margin-blocks", 8);
+        return config().getInt("world.dynamic-world-border.margin-blocks", 8);
     }
 
     public static double dynamicWorldBorderMinimumSize() {
-        return config().getDouble("plugin-driven.dynamic-world-border.minimum-size", 16.0D);
+        return config().getDouble("world.dynamic-world-border.minimum-size", 16.0D);
     }
 
     public static long dynamicWorldBorderRecalculationIntervalTicks() {
-        return config().getLong("plugin-driven.dynamic-world-border.recalculation-interval-ticks", 20L);
+        return config().getLong("world.dynamic-world-border.recalculation-interval-ticks", 20L);
     }
 
     public static int dynamicWorldBorderMaxChunksScanned() {
-        return config().getInt("plugin-driven.dynamic-world-border.max-chunks-scanned", 1024);
+        return config().getInt("world.dynamic-world-border.max-chunks-scanned", 1024);
+    }
+
+    // Tick control
+
+    public static boolean disableNaturalSpawning() {
+        return config().getBoolean("tick-control.disable-natural-spawning", true);
+    }
+
+    public static boolean disableMobAiByDefault() {
+        return config().getBoolean("tick-control.disable-mob-ai-by-default", true);
+    }
+
+    public static boolean disableMobPathfinding() {
+        return config().getBoolean("tick-control.disable-mob-pathfinding", true);
+    }
+
+    public static boolean disableMobBreeding() {
+        return config().getBoolean("tick-control.disable-mob-breeding", true);
+    }
+
+    public static boolean disableItemDespawn() {
+        return config().getBoolean("tick-control.disable-item-despawn", true);
+    }
+
+    public static boolean disableWeatherCycle() {
+        return config().getBoolean("tick-control.disable-weather-cycle", true);
+    }
+
+    public static boolean disableDaylightCycle() {
+        return config().getBoolean("tick-control.disable-daylight-cycle", true);
+    }
+
+    public static boolean disableCropGrowth() {
+        return config().getBoolean("tick-control.disable-crop-growth", true);
+    }
+
+    public static boolean disablePlantGrowth() {
+        return config().getBoolean("tick-control.disable-plant-growth", true);
+    }
+
+    public static boolean disableLeafDecay() {
+        return config().getBoolean("tick-control.disable-leaf-decay", true);
+    }
+
+    public static boolean disableFireSpread() {
+        return config().getBoolean("tick-control.disable-fire-spread", true);
+    }
+
+    public static boolean disableLavaFlow() {
+        return config().getBoolean("tick-control.disable-lava-flow", true);
+    }
+
+    public static boolean disableWaterFlow() {
+        return config().getBoolean("tick-control.disable-water-flow", true);
+    }
+
+    public static boolean disableRedstoneUpdates() {
+        return config().getBoolean("tick-control.disable-redstone-updates", true);
+    }
+
+    public static boolean disableHopperTick() {
+        return config().getBoolean("tick-control.disable-hopper-tick", true);
+    }
+
+    public static boolean disablePistonUpdate() {
+        return config().getBoolean("tick-control.disable-piston-update", true);
+    }
+
+    // Player (WIP)
+
+    public static boolean disableHunger() {
+        return config().getBoolean("player.disable-hunger", true);
+    }
+
+    public static boolean disableHealthRegeneration() {
+        return config().getBoolean("player.disable-health-regeneration", true);
+    }
+
+    public static boolean disableExperienceOrbMerge() {
+        return config().getBoolean("player.disable-experience-orb-merge", true);
+    }
+
+    public static boolean disableItemPickupDelay() {
+        return config().getBoolean("player.disable-item-pickup-delay", true);
+    }
+
+    // Achievements (WIP)
+
+    public static boolean disableAdvancementLoading() {
+        return config().getBoolean("achievements.disable-advancement-loading", true);
+    }
+
+    public static boolean disableStatisticsTracking() {
+        return config().getBoolean("achievements.disable-statistics-tracking", true);
+    }
+
+    // Physics (WIP)
+
+    public static boolean disableGravityEntities() {
+        return config().getBoolean("physics.disable-gravity-entities", true);
+    }
+
+    public static boolean disableFallingBlocks() {
+        return config().getBoolean("physics.disable-falling-blocks", true);
+    }
+
+    public static boolean disableTntPhysics() {
+        return config().getBoolean("physics.disable-tnt-physics", true);
+    }
+
+    private static void migrate() {
+        final int version = config.getInt("config-version", 1);
+        if (version >= CURRENT_CONFIG_VERSION) {
+            return;
+        }
+
+        if (version == 1) {
+            // Old plugin-driven section: migrate the flags that still exist and
+            // discard the design-time flags that are now always true.
+            moveConfigKey("plugin-driven.disable-natural-spawning", "tick-control.disable-natural-spawning");
+            moveConfigKey("plugin-driven.disable-mob-ai-by-default", "tick-control.disable-mob-ai-by-default");
+            moveConfigKey("plugin-driven.spawn-platform", "world.spawn-platform");
+            moveConfigKey("plugin-driven.dynamic-world-border", "world.dynamic-world-border");
+            config.set("plugin-driven", null);
+
+            // Old slime-worlds section
+            if (config.contains("slime-worlds")) {
+                config.set("world.formats.slime", config.getConfigurationSection("slime-worlds"));
+                config.set("slime-worlds", null);
+            }
+
+            config.set("config-version", CURRENT_CONFIG_VERSION);
+            Bukkit.getLogger().info("Migrated plaza.yml to version " + CURRENT_CONFIG_VERSION);
+        }
+
+        // The following keys briefly lived under disabled-features in an earlier
+        // config-version 2 draft. Move them to their final locations and drop
+        // design-time flags that no longer exist.
+        moveConfigKey("disabled-features.disable-natural-spawning", "tick-control.disable-natural-spawning");
+        moveConfigKey("disabled-features.disable-mob-ai-by-default", "tick-control.disable-mob-ai-by-default");
+        moveConfigKey("disabled-features.spawn-platform", "world.spawn-platform");
+        moveConfigKey("disabled-features.dynamic-world-border", "world.dynamic-world-border");
+        config.set("disabled-features.disable-vanilla-world-generation", null);
+        config.set("disabled-features.disable-default-nether", null);
+        config.set("disabled-features.disable-default-end", null);
+    }
+
+    private static void moveConfigKey(final String from, final String to) {
+        if (config.contains(from)) {
+            config.set(to, config.get(from));
+            config.set(from, null);
+        }
     }
 
     private static void addDefaults(final YamlConfiguration config) {
-        config.addDefault("config-version", 1);
+        config.addDefault("config-version", CURRENT_CONFIG_VERSION);
 
-        config.addDefault("plugin-driven.disable-vanilla-world-generation", true);
-        config.addDefault("plugin-driven.disable-natural-spawning", true);
-        config.addDefault("plugin-driven.disable-mob-ai-by-default", true);
-        config.addDefault("plugin-driven.disable-default-nether", true);
-        config.addDefault("plugin-driven.disable-default-end", true);
-        config.addDefault("plugin-driven.spawn-platform.enabled", true);
-        config.addDefault("plugin-driven.dynamic-world-border.enabled", true);
-        config.addDefault("plugin-driven.dynamic-world-border.margin-blocks", 8);
-        config.addDefault("plugin-driven.dynamic-world-border.minimum-size", 16.0D);
-        config.addDefault("plugin-driven.dynamic-world-border.recalculation-interval-ticks", 20L);
-        config.addDefault("plugin-driven.dynamic-world-border.max-chunks-scanned", 1024);
+        // World formats
+        config.addDefault("world.default-format", "SLIME");
 
-        config.addDefault("slime-worlds.enabled", true);
-        config.addDefault("slime-worlds.storage", "file");
-        config.addDefault("slime-worlds.worlds-directory", "slime_worlds");
-        config.addDefault("slime-worlds.default-biome", "minecraft:plains");
-        config.addDefault("slime-worlds.read-only", false);
-        config.addDefault("slime-worlds.save-poi", true);
-        config.addDefault("slime-worlds.save-block-ticks", false);
-        config.addDefault("slime-worlds.save-fluid-ticks", false);
+        config.addDefault("world.formats.slime.enabled", true);
+        config.addDefault("world.formats.slime.storage", "file");
+        config.addDefault("world.formats.slime.worlds-directory", "slime_worlds");
+        config.addDefault("world.formats.slime.default-biome", "minecraft:plains");
+        config.addDefault("world.formats.slime.read-only", false);
+        config.addDefault("world.formats.slime.save-poi", true);
+        config.addDefault("world.formats.slime.save-block-ticks", false);
+        config.addDefault("world.formats.slime.save-fluid-ticks", false);
+
+        config.addDefault("world.formats.anvil.enabled", false);
+
+        // World defaults (not disabled features)
+        config.addDefault("world.spawn-platform.enabled", true);
+        config.addDefault("world.dynamic-world-border.enabled", true);
+        config.addDefault("world.dynamic-world-border.margin-blocks", 8);
+        config.addDefault("world.dynamic-world-border.minimum-size", 16.0D);
+        config.addDefault("world.dynamic-world-border.recalculation-interval-ticks", 20L);
+        config.addDefault("world.dynamic-world-border.max-chunks-scanned", 1024);
+
+        // Tick control (WIP)
+        config.addDefault("tick-control.disable-natural-spawning", true);
+        config.addDefault("tick-control.disable-mob-ai-by-default", true);
+        config.addDefault("tick-control.disable-mob-pathfinding", true);
+        config.addDefault("tick-control.disable-mob-breeding", true);
+        config.addDefault("tick-control.disable-item-despawn", true);
+        config.addDefault("tick-control.disable-weather-cycle", true);
+        config.addDefault("tick-control.disable-daylight-cycle", true);
+        config.addDefault("tick-control.disable-crop-growth", true);
+        config.addDefault("tick-control.disable-plant-growth", true);
+        config.addDefault("tick-control.disable-leaf-decay", true);
+        config.addDefault("tick-control.disable-fire-spread", true);
+        config.addDefault("tick-control.disable-lava-flow", true);
+        config.addDefault("tick-control.disable-water-flow", true);
+        config.addDefault("tick-control.disable-redstone-updates", true);
+        config.addDefault("tick-control.disable-hopper-tick", true);
+        config.addDefault("tick-control.disable-piston-update", true);
+
+        // Player (WIP)
+        config.addDefault("player.disable-hunger", true);
+        config.addDefault("player.disable-health-regeneration", true);
+        config.addDefault("player.disable-experience-orb-merge", true);
+        config.addDefault("player.disable-item-pickup-delay", true);
+
+        // Achievements (WIP)
+        config.addDefault("achievements.disable-advancement-loading", true);
+        config.addDefault("achievements.disable-statistics-tracking", true);
+
+        // Physics (WIP)
+        config.addDefault("physics.disable-gravity-entities", true);
+        config.addDefault("physics.disable-falling-blocks", true);
+        config.addDefault("physics.disable-tnt-physics", true);
     }
 
     private static void save() {

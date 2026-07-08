@@ -14,7 +14,7 @@ index ca2caac..bbe64c8 100644
          );
 -        final org.bukkit.generator.ChunkGenerator chunkGenerator = this.server.getGenerator(loadingInfo.name());
 +        org.bukkit.generator.ChunkGenerator chunkGenerator = this.server.getGenerator(loadingInfo.name());
-+        if (chunkGenerator == null && org.plazamc.server.PlazaConfig.disableVanillaWorldGeneration()) { // Plaza - plugin-driven defaults
++        if (chunkGenerator == null) { // Plaza - default void generator; vanilla generation is disabled by design
 +            chunkGenerator = new org.plazamc.server.generator.PlazaVoidChunkGenerator();
 +        }
          org.bukkit.generator.BiomeProvider biomeProvider = this.server.getBiomeProvider(loadingInfo.name());

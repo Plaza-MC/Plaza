@@ -13,11 +13,11 @@ index 51a01f86f..4dc03fbcc 100644
          if (stemKey == LevelStem.NETHER) {
              dimension = -1;
 -            enabled = this.server.server.getAllowNether();
-+            enabled = this.server.server.getAllowNether() && !org.plazamc.server.PlazaConfig.disableDefaultNether(); // Plaza - plugin-driven defaults
++            enabled = false; // Plaza - default Nether is disabled by design
          } else if (stemKey == LevelStem.END) {
              dimension = 1;
 -            enabled = this.server.server.getAllowEnd();
-+            enabled = this.server.server.getAllowEnd() && !org.plazamc.server.PlazaConfig.disableDefaultEnd(); // Plaza - plugin-driven defaults
++            enabled = false; // Plaza - default End is disabled by design
          } else if (stemKey != LevelStem.OVERWORLD) {
              dimension = -999;
          }

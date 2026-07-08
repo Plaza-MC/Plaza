@@ -3,6 +3,7 @@ package org.plazamc.server.slime;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
@@ -28,18 +29,18 @@ public final class PlazaSlimeWorldBootstrap {
             return;
         }
 
+        if (!"SLIME".equalsIgnoreCase(PlazaConfig.worldDefaultFormat())) {
+            Logger.getLogger("Plaza").warning("Default world format is set to '" + PlazaConfig.worldDefaultFormat()
+                + "'; Slime world bootstrap skipped. Only SLIME is supported as default format right now.");
+            return;
+        }
+
         final String levelName = ((DedicatedServer) server).getProperties().levelName;
         final PlazaSlimeLoader loader = createLoader();
 
         final PlazaSlimeWorld overworld = loadOrCreateDefaultWorld(loader, levelName, org.bukkit.World.Environment.NORMAL);
-        final PlazaSlimeWorld nether = PlazaConfig.disableDefaultNether()
-            ? null
-            : loadOrCreateDefaultWorld(loader, levelName + "_nether", org.bukkit.World.Environment.NETHER);
-        final PlazaSlimeWorld end = PlazaConfig.disableDefaultEnd()
-            ? null
-            : loadOrCreateDefaultWorld(loader, levelName + "_the_end", org.bukkit.World.Environment.THE_END);
-
-        PlazaSlimeNMSBridge.instance().setDefaultWorlds(overworld, nether, end);
+        // Plaza design decision: default Nether and End are always disabled.
+        PlazaSlimeNMSBridge.instance().setDefaultWorlds(overworld, null, null);
     }
 
     private static PlazaSlimeLoader createLoader() {
