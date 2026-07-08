@@ -64,11 +64,11 @@ public final class PlazaSlimeWorldBootstrap {
     }
 
     private static PlazaSlimeLoader createLoader() {
-        final String storage = PlazaConfig.slimeWorldsStorage();
+        final String storage = PlazaConfig.plazaWorldsDefaultSource();
         if (!"file".equalsIgnoreCase(storage)) {
-            throw new UnsupportedOperationException("Slime storage backend '" + storage + "' is not supported yet.");
+            throw new UnsupportedOperationException("Plaza world source '" + storage + "' is not supported yet.");
         }
-        return new PlazaFileSlimeLoader(PlazaConfig.slimeWorldsDirectory());
+        return new PlazaFileSlimeLoader(PlazaConfig.plazaWorldsFilePath());
     }
 
     public static PlazaSlimeWorld loadOrCreateWorld(final PlazaSlimeLoader loader, final String name,

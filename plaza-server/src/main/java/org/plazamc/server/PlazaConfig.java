@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
@@ -11,7 +12,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
  */
 public final class PlazaConfig {
     private static final File CONFIG_FILE = new File("plaza.yml");
-    private static final int CURRENT_CONFIG_VERSION = 2;
+    private static final int CURRENT_CONFIG_VERSION = 3;
     private static YamlConfiguration config;
 
     private PlazaConfig() {
@@ -44,16 +45,96 @@ public final class PlazaConfig {
         return config().getString("world.default-format", "SLIME").toUpperCase();
     }
 
+    public static boolean spawnPlatformEnabled() {
+        return config().getBoolean("world.spawn-platform.enabled", true);
+    }
+
+    public static boolean dynamicWorldBorderEnabled() {
+        return config().getBoolean("world.dynamic-world-border.enabled", true);
+    }
+
+    public static int dynamicWorldBorderMargin() {
+        return config().getInt("world.dynamic-world-border.margin-blocks", 8);
+    }
+
+    public static double dynamicWorldBorderMinimumSize() {
+        return config().getDouble("world.dynamic-world-border.minimum-size", 16.0D);
+    }
+
+    public static long dynamicWorldBorderRecalculationIntervalTicks() {
+        return config().getLong("world.dynamic-world-border.recalculation-interval-ticks", 20L);
+    }
+
+    public static int dynamicWorldBorderMaxChunksScanned() {
+        return config().getInt("world.dynamic-world-border.max-chunks-scanned", 1024);
+    }
+
+    // Plaza worlds (global data sources and per-world settings)
+
+    public static String plazaWorldsDefaultSource() {
+        return config().getString("plaza-worlds.default-source", "file").toLowerCase();
+    }
+
+    public static ConfigurationSection plazaWorldsSources() {
+        ConfigurationSection section = config().getConfigurationSection("plaza-worlds.sources");
+        if (section == null) {
+            section = config().createSection("plaza-worlds.sources");
+        }
+        return section;
+    }
+
+    public static ConfigurationSection plazaWorldsSourceConfig(final String source) {
+        ConfigurationSection section = plazaWorldsSources().getConfigurationSection(source);
+        if (section == null) {
+            section = plazaWorldsSources().createSection(source);
+        }
+        return section;
+    }
+
+    public static boolean plazaWorldsSourceEnabled(final String source) {
+        return plazaWorldsSourceConfig(source).getBoolean("enabled", true);
+    }
+
+    public static String plazaWorldsSourceType(final String source) {
+        return plazaWorldsSourceConfig(source).getString("type", source).toLowerCase();
+    }
+
+    public static File plazaWorldsFilePath() {
+        return new File(plazaWorldsSourceConfig("file").getString("path", "plaza_worlds"));
+    }
+
+    public static ConfigurationSection plazaWorldsWorlds() {
+        ConfigurationSection section = config().getConfigurationSection("plaza-worlds.worlds");
+        if (section == null) {
+            section = config().createSection("plaza-worlds.worlds");
+        }
+        return section;
+    }
+
+    public static ConfigurationSection plazaWorldsWorldConfig(final String worldName) {
+        ConfigurationSection section = plazaWorldsWorlds().getConfigurationSection(worldName);
+        if (section == null) {
+            section = plazaWorldsWorlds().createSection(worldName);
+        }
+        return section;
+    }
+
+    public static String plazaWorldsWorldSource(final String worldName) {
+        return plazaWorldsWorldConfig(worldName).getString("source", plazaWorldsDefaultSource()).toLowerCase();
+    }
+
+    public static boolean plazaWorldsWorldLoadOnStartup(final String worldName) {
+        return plazaWorldsWorldConfig(worldName).getBoolean("load-on-startup", true);
+    }
+
+    public static boolean plazaWorldsWorldReadOnly(final String worldName) {
+        return plazaWorldsWorldConfig(worldName).getBoolean("read-only", false);
+    }
+
+    // Legacy Slime format configuration (kept for format-specific defaults)
+
     public static boolean slimeWorldsEnabled() {
-        return config().getBoolean("world.formats.slime.enabled", true);
-    }
-
-    public static String slimeWorldsStorage() {
-        return config().getString("world.formats.slime.storage", "file");
-    }
-
-    public static File slimeWorldsDirectory() {
-        return new File(config().getString("world.formats.slime.worlds-directory", "slime_worlds"));
+        return "SLIME".equalsIgnoreCase(worldDefaultFormat());
     }
 
     public static String slimeDefaultBiome() {
@@ -78,30 +159,6 @@ public final class PlazaConfig {
 
     public static boolean anvilWorldsEnabled() {
         return config().getBoolean("world.formats.anvil.enabled", false);
-    }
-
-    public static boolean spawnPlatformEnabled() {
-        return config().getBoolean("world.spawn-platform.enabled", true);
-    }
-
-    public static boolean dynamicWorldBorderEnabled() {
-        return config().getBoolean("world.dynamic-world-border.enabled", true);
-    }
-
-    public static int dynamicWorldBorderMargin() {
-        return config().getInt("world.dynamic-world-border.margin-blocks", 8);
-    }
-
-    public static double dynamicWorldBorderMinimumSize() {
-        return config().getDouble("world.dynamic-world-border.minimum-size", 16.0D);
-    }
-
-    public static long dynamicWorldBorderRecalculationIntervalTicks() {
-        return config().getLong("world.dynamic-world-border.recalculation-interval-ticks", 20L);
-    }
-
-    public static int dynamicWorldBorderMaxChunksScanned() {
-        return config().getInt("world.dynamic-world-border.max-chunks-scanned", 1024);
     }
 
     // Tick control
@@ -219,34 +276,46 @@ public final class PlazaConfig {
         }
 
         if (version == 1) {
-            // Old plugin-driven section: migrate the flags that still exist and
-            // discard the design-time flags that are now always true.
             moveConfigKey("plugin-driven.disable-natural-spawning", "tick-control.disable-natural-spawning");
             moveConfigKey("plugin-driven.disable-mob-ai-by-default", "tick-control.disable-mob-ai-by-default");
             moveConfigKey("plugin-driven.spawn-platform", "world.spawn-platform");
             moveConfigKey("plugin-driven.dynamic-world-border", "world.dynamic-world-border");
             config.set("plugin-driven", null);
 
-            // Old slime-worlds section
             if (config.contains("slime-worlds")) {
                 config.set("world.formats.slime", config.getConfigurationSection("slime-worlds"));
                 config.set("slime-worlds", null);
             }
-
-            config.set("config-version", CURRENT_CONFIG_VERSION);
-            Bukkit.getLogger().info("Migrated plaza.yml to version " + CURRENT_CONFIG_VERSION);
         }
 
-        // The following keys briefly lived under disabled-features in an earlier
-        // config-version 2 draft. Move them to their final locations and drop
-        // design-time flags that no longer exist.
-        moveConfigKey("disabled-features.disable-natural-spawning", "tick-control.disable-natural-spawning");
-        moveConfigKey("disabled-features.disable-mob-ai-by-default", "tick-control.disable-mob-ai-by-default");
-        moveConfigKey("disabled-features.spawn-platform", "world.spawn-platform");
-        moveConfigKey("disabled-features.dynamic-world-border", "world.dynamic-world-border");
-        config.set("disabled-features.disable-vanilla-world-generation", null);
-        config.set("disabled-features.disable-default-nether", null);
-        config.set("disabled-features.disable-default-end", null);
+        if (version <= 2) {
+            moveConfigKey("disabled-features.disable-natural-spawning", "tick-control.disable-natural-spawning");
+            moveConfigKey("disabled-features.disable-mob-ai-by-default", "tick-control.disable-mob-ai-by-default");
+            moveConfigKey("disabled-features.spawn-platform", "world.spawn-platform");
+            moveConfigKey("disabled-features.dynamic-world-border", "world.dynamic-world-border");
+            config.set("disabled-features.disable-vanilla-world-generation", null);
+            config.set("disabled-features.disable-default-nether", null);
+            config.set("disabled-features.disable-default-end", null);
+            config.set("disabled-features", null);
+
+            // Migrate legacy slime-worlds directory into the global plaza-worlds file source.
+            if (config.contains("world.formats.slime.worlds-directory")) {
+                final String legacyPath = config.getString("world.formats.slime.worlds-directory", "slime_worlds");
+                config.set("plaza-worlds.sources.file.type", "file");
+                config.set("plaza-worlds.sources.file.path", legacyPath);
+                config.set("world.formats.slime.worlds-directory", null);
+            }
+
+            // Old storage key used a plain string; migrate to the new source name.
+            if (config.contains("world.formats.slime.storage")) {
+                final String legacyStorage = config.getString("world.formats.slime.storage", "file").toLowerCase();
+                config.set("plaza-worlds.default-source", legacyStorage);
+                config.set("world.formats.slime.storage", null);
+            }
+        }
+
+        config.set("config-version", CURRENT_CONFIG_VERSION);
+        Bukkit.getLogger().info("Migrated plaza.yml to version " + CURRENT_CONFIG_VERSION);
     }
 
     private static void moveConfigKey(final String from, final String to) {
@@ -262,9 +331,6 @@ public final class PlazaConfig {
         // World formats
         config.addDefault("world.default-format", "SLIME");
 
-        config.addDefault("world.formats.slime.enabled", true);
-        config.addDefault("world.formats.slime.storage", "file");
-        config.addDefault("world.formats.slime.worlds-directory", "slime_worlds");
         config.addDefault("world.formats.slime.default-biome", "minecraft:plains");
         config.addDefault("world.formats.slime.read-only", false);
         config.addDefault("world.formats.slime.save-poi", true);
@@ -280,6 +346,37 @@ public final class PlazaConfig {
         config.addDefault("world.dynamic-world-border.minimum-size", 16.0D);
         config.addDefault("world.dynamic-world-border.recalculation-interval-ticks", 20L);
         config.addDefault("world.dynamic-world-border.max-chunks-scanned", 1024);
+
+        // Global Plaza world sources and worlds
+        config.addDefault("plaza-worlds.default-source", "file");
+
+        config.addDefault("plaza-worlds.sources.file.type", "file");
+        config.addDefault("plaza-worlds.sources.file.path", "plaza_worlds");
+
+        config.addDefault("plaza-worlds.sources.mysql.type", "mysql");
+        config.addDefault("plaza-worlds.sources.mysql.enabled", false);
+        config.addDefault("plaza-worlds.sources.mysql.host", "127.0.0.1");
+        config.addDefault("plaza-worlds.sources.mysql.port", 3306);
+        config.addDefault("plaza-worlds.sources.mysql.database", "plazamc");
+        config.addDefault("plaza-worlds.sources.mysql.username", "plazamc");
+        config.addDefault("plaza-worlds.sources.mysql.password", "");
+        config.addDefault("plaza-worlds.sources.mysql.use-ssl", false);
+        config.addDefault("plaza-worlds.sources.mysql.table", "worlds");
+
+        config.addDefault("plaza-worlds.sources.mongodb.type", "mongodb");
+        config.addDefault("plaza-worlds.sources.mongodb.enabled", false);
+        config.addDefault("plaza-worlds.sources.mongodb.host", "127.0.0.1");
+        config.addDefault("plaza-worlds.sources.mongodb.port", 27017);
+        config.addDefault("plaza-worlds.sources.mongodb.database", "plazamc");
+        config.addDefault("plaza-worlds.sources.mongodb.collection", "worlds");
+        config.addDefault("plaza-worlds.sources.mongodb.username", "");
+        config.addDefault("plaza-worlds.sources.mongodb.password", "");
+        config.addDefault("plaza-worlds.sources.mongodb.auth-source", "admin");
+        config.addDefault("plaza-worlds.sources.mongodb.uri", "");
+
+        config.addDefault("plaza-worlds.worlds.world.source", "file");
+        config.addDefault("plaza-worlds.worlds.world.load-on-startup", true);
+        config.addDefault("plaza-worlds.worlds.world.read-only", false);
 
         // Tick control (WIP)
         config.addDefault("tick-control.disable-natural-spawning", true);
