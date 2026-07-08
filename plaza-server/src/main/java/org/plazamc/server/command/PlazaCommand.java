@@ -20,8 +20,8 @@ public final class PlazaCommand extends Command {
     private static final String SERVER_NAME = "Plaza";
     private static final String PLAZA_WEBSITE = "plazamc.org";
     private static final String BLUEVA_WEBSITE = "blueva.net";
-    private static final String COLOR_PRIMARY = "#55FFFF";
-    private static final String COLOR_SECONDARY = "#AA55FF";
+    private static final String COLOR_PRIMARY = "#34a9d5";
+    private static final String COLOR_SECONDARY = "#6afafd";
     private static final String SEPARATOR = "<dark_gray><strikethrough>----------------------------------------------</strikethrough></dark_gray>";
     private static final String PREFIX = "<bold><gradient:" + COLOR_PRIMARY + ":" + COLOR_SECONDARY + ">" + SERVER_NAME + "</gradient></bold> <gray>»</gray>";
 
@@ -81,9 +81,9 @@ public final class PlazaCommand extends Command {
         lines.add(Component.empty());
         lines.add(mm("<bold><gradient:" + COLOR_PRIMARY + ":" + COLOR_SECONDARY + ">" + SERVER_NAME + "</gradient></bold> <gray>-</gray> <yellow>" + version + "</yellow>"));
         lines.add(mm("<gray>Created by Blueva (<click:open_url:'https://" + BLUEVA_WEBSITE + "'><hover:show_text:'<gray>Open " + BLUEVA_WEBSITE + "</gray>'><aqua>" + BLUEVA_WEBSITE + "</aqua></hover></click>)</gray>"));
-        lines.add(mm("<gray>Website: <click:open_url:'https://" + PLAZA_WEBSITE + "'><hover:show_text:'<gray>Open " + PLAZA_WEBSITE + "</gray>'><light_purple>" + PLAZA_WEBSITE + "</light_purple></hover></click></gray>"));
+        lines.add(mm("<gray>Website: <click:open_url:'https://" + PLAZA_WEBSITE + "'><hover:show_text:'<gray>Open " + PLAZA_WEBSITE + "</gray>'><aqua>" + PLAZA_WEBSITE + "</aqua></hover></click></gray>"));
         lines.add(Component.empty());
-        lines.add(mm("<gray>Use</gray> <light_purple>/plaza reload</light_purple> <gray>to reload Plaza configuration.</gray>"));
+        lines.add(mm("<gray>Use</gray> <aqua>/plaza reload</aqua> <gray>to reload Plaza configuration.</gray>"));
         lines.add(Component.empty());
         lines.add(mm(SEPARATOR));
         for (final Component line : lines) {
