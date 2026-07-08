@@ -6,29 +6,33 @@ Subject: [PATCH] Bukkit API world creation respects default format
 
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -1197,6 +1197,8 @@ public class CraftServer implements Server {
+@@ -1197,6 +1197,7 @@ public final class CraftServer implements Server {
              Preconditions.checkArgument(folder.isDirectory(), "File (%s) exists and isn't a folder", name);
          }
- 
+
 +        final boolean plazaExplicitGenerator = creator.generator() != null; // Plaza
-+        final boolean plazaBukkitYmlGenerator = chunkGenerator != null; // Plaza
          if (chunkGenerator == null) {
              chunkGenerator = this.getGenerator(name);
          }
-@@ -1205,6 +1207,19 @@ public class CraftServer implements Server {
+@@ -1205,6 +1206,24 @@ public final class CraftServer implements Server {
              biomeProvider = this.getBiomeProvider(name);
          }
- 
-+        // Plaza start - default world format and void generator
+
++        // Plaza start - default void generator unless explicitly specified
 +        if (chunkGenerator == null) {
 +            chunkGenerator = new org.plazamc.server.generator.PlazaVoidChunkGenerator();
 +        }
-+        if ("SLIME".equalsIgnoreCase(org.plazamc.server.PlazaConfig.worldDefaultFormat())
-+                && !plazaExplicitGenerator
-+                && !plazaBukkitYmlGenerator) {
++        // Plaza end
++
++        // Plaza start - default world format
++        final String plazaDefaultFormat = org.plazamc.server.PlazaConfig.worldDefaultFormat();
++        if ("SLIME".equalsIgnoreCase(plazaDefaultFormat) && chunkGenerator instanceof org.plazamc.server.generator.PlazaVoidChunkGenerator) {
 +            final org.bukkit.World plazaWorld = org.plazamc.server.slime.PlazaSlimeWorldBootstrap.createOrLoadWorld(name, creator.environment());
 +            org.plazamc.server.world.PlazaWorldShadow.create(name); // legacy folder compatibility
 +            return plazaWorld;
++        }
++        if ("ANVIL".equalsIgnoreCase(plazaDefaultFormat) && chunkGenerator instanceof org.plazamc.server.generator.PlazaVoidChunkGenerator) {
++            org.plazamc.server.world.PlazaWorldShadow.delete(name); // ANVIL owns the real world folder
 +        }
 +        // Plaza end
 +
