@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Wed, 8 Jul 2026 22:34:00 +0200
+Subject: [PATCH] Rebrand bStats Metrics for Plaza and add world format chart
+
+Paper already submits server-implementation metrics through bStats.
+Replace the Paper software name and version chart with Plaza so the
+bStats page for server implementation ID 32486 receives the data.
+
+Also add a Plaza-specific AdvancedPie chart that reports how many
+loaded worlds use each storage format (SLIME, ANVIL, etc.).
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/Metrics.java b/src/main/java/com/destroystokyo/paper/Metrics.java
+index 9f4d73fd321f6f0cd19fdd1b63068d2ea6c0816b..bb7ce420a28fe358b1fbb8b0a7741742a78c7338 100644
+--- a/src/main/java/com/destroystokyo/paper/Metrics.java
++++ b/src/main/java/com/destroystokyo/paper/Metrics.java
+@@ -593,7 +593,7 @@ public class Metrics {
+             boolean logFailedRequests = config.getBoolean("logFailedRequests", false);
+             // Only start Metrics, if it's enabled in the config
+             if (config.getBoolean("enabled", true)) {
+-                Metrics metrics = new Metrics("Paper", serverUUID, logFailedRequests, Bukkit.getLogger());
++                Metrics metrics = new Metrics("Plaza", serverUUID, logFailedRequests, Bukkit.getLogger()); // Plaza - rebrand bStats
+ 
+                 metrics.addCustomChart(new Metrics.SimplePie("minecraft_version", () -> {
+                     String minecraftVersion = Bukkit.getVersion();
+@@ -603,15 +603,24 @@ public class Metrics {
+ 
+                 metrics.addCustomChart(new Metrics.SingleLineChart("players", () -> Bukkit.getOnlinePlayers().size()));
+                 metrics.addCustomChart(new Metrics.SimplePie("online_mode", () -> Bukkit.getOnlineMode() ? "online" : "offline"));
+-                final String paperVersion;
++                final String plazaVersion; // Plaza - rebrand bStats
+                 final String implVersion = org.bukkit.craftbukkit.Main.class.getPackage().getImplementationVersion();
+                 if (implVersion != null) {
+                     final String buildOrHash = implVersion.substring(implVersion.lastIndexOf('-') + 1);
+-                    paperVersion = "git-Paper-%s-%s".formatted(Bukkit.getServer().getMinecraftVersion(), buildOrHash);
++                    plazaVersion = "git-Plaza-%s-%s".formatted(Bukkit.getServer().getMinecraftVersion(), buildOrHash); // Plaza - rebrand bStats
+                 } else {
+-                    paperVersion = "unknown";
++                    plazaVersion = "unknown"; // Plaza - rebrand bStats
+                 }
+-                metrics.addCustomChart(new Metrics.SimplePie("paper_version", () -> paperVersion));
++                metrics.addCustomChart(new Metrics.SimplePie("plaza_version", () -> plazaVersion)); // Plaza - rebrand bStats
++
++                metrics.addCustomChart(new Metrics.AdvancedPie("world_formats", () -> { // Plaza - world format distribution
++                    Map<String, Integer> map = new HashMap<>();
++                    for (org.plazamc.api.world.PlazaWorldInstance instance : org.plazamc.api.PlazaAPI.instance().getLoadedWorlds()) {
++                        String format = instance.getWorldData().getFormat().name();
++                        map.merge(format, 1, Integer::sum);
++                    }
++                    return map;
++                }));
+ 
+                 metrics.addCustomChart(new Metrics.DrilldownPie("java_version", () -> {
+                     Map<String, Map<String, Integer>> map = new HashMap<>();
