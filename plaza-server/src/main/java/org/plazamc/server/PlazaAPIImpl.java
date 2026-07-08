@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.PlazaAPI;
 import org.plazamc.api.exceptions.CorruptedWorldException;
+import org.plazamc.api.exceptions.InvalidWorldException;
 import org.plazamc.api.exceptions.UnknownWorldException;
 import org.plazamc.api.exceptions.WorldAlreadyExistsException;
 import org.plazamc.api.exceptions.WorldLoadedException;
@@ -75,7 +76,7 @@ public final class PlazaAPIImpl implements PlazaAPI {
     @Override
     @NotNull
     public PlazaWorld importVanillaWorld(@NotNull File worldDir, @NotNull String worldName,
-                                         @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException {
+                                         @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException, InvalidWorldException {
         return PlazaWorldManager.importVanillaWorld(worldDir, worldName, loader);
     }
 

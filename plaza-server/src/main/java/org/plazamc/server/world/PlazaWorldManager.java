@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.events.PlazaWorldLoadEvent;
 import org.plazamc.api.events.PlazaWorldSaveEvent;
 import org.plazamc.api.events.PlazaWorldUnloadEvent;
+import org.plazamc.api.exceptions.InvalidWorldException;
 import org.plazamc.api.exceptions.UnknownWorldException;
 import org.plazamc.api.exceptions.WorldAlreadyExistsException;
 import org.plazamc.api.exceptions.WorldLoadedException;
@@ -15,6 +16,7 @@ import org.plazamc.api.world.PlazaWorld;
 import org.plazamc.api.world.PlazaWorldInstance;
 import org.plazamc.api.world.PlazaWorldLoader;
 import org.plazamc.api.world.PlazaWorldPropertyMap;
+import org.plazamc.api.world.PlazaWorldPropertyMapImpl;
 import org.plazamc.server.PlazaConfig;
 import org.plazamc.server.slime.PlazaSlimeWorld;
 import org.plazamc.server.slime.format.PlazaSlimeSerializer;
@@ -212,7 +214,13 @@ public final class PlazaWorldManager {
 
     public static void migrateWorld(@NotNull String worldName, @NotNull PlazaWorldLoader currentLoader,
                                     @NotNull PlazaWorldLoader newLoader) throws IOException, WorldAlreadyExistsException, UnknownWorldException {
-        throw new UnsupportedOperationException("migrateWorld is not implemented yet");
+        if (newLoader.worldExists(worldName)) {
+            throw new WorldAlreadyExistsException(worldName);
+        }
+
+        PlazaWorld world = currentLoader.readWorld(worldName, false, new PlazaWorldPropertyMapImpl());
+        newLoader.saveWorld(world);
+        currentLoader.deleteWorld(worldName);
     }
 
     @NotNull
@@ -223,12 +231,15 @@ public final class PlazaWorldManager {
 
     @NotNull
     public static PlazaWorld importVanillaWorld(@NotNull File worldDir, @NotNull String worldName,
-                                                @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException {
-        throw new UnsupportedOperationException("importVanillaWorld is not implemented yet");
+                                                @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException, InvalidWorldException {
+        if (Bukkit.getWorld(worldName) != null) {
+            throw new WorldLoadedException(worldName);
+        }
+        return org.plazamc.server.world.importexport.PlazaAnvilImporter.importWorld(worldDir, worldName, loader);
     }
 
     public static void exportWorld(@NotNull PlazaWorld world, @NotNull File worldDir) throws IOException {
-        throw new UnsupportedOperationException("exportWorld is not implemented yet");
+        org.plazamc.server.world.importexport.PlazaAnvilExporter.exportWorld(world, worldDir);
     }
 
     @NotNull

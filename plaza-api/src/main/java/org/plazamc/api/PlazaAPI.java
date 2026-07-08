@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.events.PlazaWorldLoadEvent;
 import org.plazamc.api.exceptions.CorruptedWorldException;
+import org.plazamc.api.exceptions.InvalidWorldException;
 import org.plazamc.api.exceptions.UnknownWorldException;
 import org.plazamc.api.exceptions.WorldAlreadyExistsException;
 import org.plazamc.api.exceptions.WorldLoadedException;
@@ -125,7 +126,7 @@ public interface PlazaAPI {
      */
     @NotNull
     PlazaWorld importVanillaWorld(@NotNull File worldDir, @NotNull String worldName,
-                                  @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException;
+                                  @NotNull PlazaWorldLoader loader) throws IOException, WorldAlreadyExistsException, WorldLoadedException, InvalidWorldException;
 
     /**
      * Exports a Plaza world to a vanilla Anvil folder.

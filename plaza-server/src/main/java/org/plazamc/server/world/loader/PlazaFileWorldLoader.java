@@ -10,6 +10,7 @@ import org.plazamc.server.slime.format.PlazaSlimeSerializer;
 import org.plazamc.server.slime.format.reader.PlazaSlimeWorldReaderRegistry;
 import org.plazamc.server.slime.loader.PlazaSlimeLoader;
 import org.plazamc.server.slime.properties.PlazaSlimePropertyMap;
+import org.plazamc.server.world.PlazaWorldBackup;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -79,7 +80,9 @@ public class PlazaFileWorldLoader implements PlazaSlimeLoader {
 
     @Override
     public void saveWorld(String worldName, byte[] serializedWorld) throws IOException {
-        try (FileOutputStream fos = new FileOutputStream(new File(worldDir, worldName + ".slime"))) {
+        File worldFile = new File(worldDir, worldName + ".slime");
+        PlazaWorldBackup.backupFile(worldFile, worldName);
+        try (FileOutputStream fos = new FileOutputStream(worldFile)) {
             fos.write(serializedWorld);
         }
     }
@@ -90,7 +93,9 @@ public class PlazaFileWorldLoader implements PlazaSlimeLoader {
             throw new UnknownWorldException(worldName);
         }
 
-        if (!new File(worldDir, worldName + ".slime").delete()) {
+        File worldFile = new File(worldDir, worldName + ".slime");
+        PlazaWorldBackup.backupFile(worldFile, worldName);
+        if (!worldFile.delete()) {
             throw new IOException("Failed to delete the world file. File#delete() returned false.");
         }
     }
