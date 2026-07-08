@@ -9,20 +9,22 @@ slightly different blocks every time the world is regenerated. For Plaza's
 plugin-driven void world the spawn point is already fixed at the center of the
 glass platform, so skip the search and place the player exactly there.
 
-
 diff --git a/net/minecraft/server/network/config/PrepareSpawnTask.java b/net/minecraft/server/network/config/PrepareSpawnTask.java
-index 00000000..00000000 100644
+index 5014840bf5d7ef53a4fea8aa6f3b25eb4033ff96..00b59728453915da90cbd3706820bd7b3ae800c2 100644
 --- a/net/minecraft/server/network/config/PrepareSpawnTask.java
 +++ b/net/minecraft/server/network/config/PrepareSpawnTask.java
-@@ -109,7 +109,14 @@ public class PrepareSpawnTask implements ConfigurationTask {
+@@ -109,7 +109,17 @@ public class PrepareSpawnTask implements ConfigurationTask {
              // Paper end - move logic in Entity to here, to use bukkit supplied world UUID & reset to main world spawn if no valid world is found
              CompletableFuture<Vec3> completableFuture = savedPosition.position()
                  .map(CompletableFuture::completedFuture)
 -                .orElseGet(() -> PlayerSpawnFinder.findSpawn(serverLevel, respawnData.pos()));
 +                .orElseGet(() -> {
-+                    // Plaza start - plugin-driven world defaults: force exact centered spawn for void worlds
-+                    if (serverLevel.generator instanceof org.plazamc.server.generator.PlazaVoidChunkGenerator) {
-+                        return CompletableFuture.completedFuture(Vec3.atBottomCenterOf(respawnData.pos()));
++                    // Plaza start - plugin-driven world defaults: force exact centered spawn for void/slime worlds
++                    if (serverLevel.generator instanceof org.plazamc.server.generator.PlazaVoidChunkGenerator
++                            || serverLevel instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance) {
++                        // Use the world-specific spawn data instead of the global overworld data, because
++                        // Plaza worlds may have their own spawn point independent from vanilla's WorldData.
++                        return CompletableFuture.completedFuture(Vec3.atBottomCenterOf(serverLevel.serverLevelData.getRespawnData().pos()));
 +                    }
 +                    // Plaza end
 +                    return PlayerSpawnFinder.findSpawn(serverLevel, respawnData.pos());
