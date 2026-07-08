@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:30:00 +0200
+Subject: [PATCH] Slime World PaperHooks force no save
+
+Prevents vanilla chunk/region saving for chunks belonging to a
+PlazaSlimeLevelInstance world.
+
+diff --git a/ca/spottedleaf/moonrise/paper/PaperHooks.java b/ca/spottedleaf/moonrise/paper/PaperHooks.java
+index 31e34721f48a5d88379f50104abcf0fc63ebd194..7418c84705cd9d826245e28c4d6d793eb226611a 100644
+--- a/ca/spottedleaf/moonrise/paper/PaperHooks.java
++++ b/ca/spottedleaf/moonrise/paper/PaperHooks.java
+@@ -224,6 +224,11 @@ public final class PaperHooks extends BaseChunkSystemHooks implements PlatformHo
+ 
+     @Override
+     public boolean forceNoSave(final ChunkAccess chunk) {
++        // Plaza start - Slime World prevents vanilla chunk saving
++        if (chunk instanceof LevelChunk levelChunk && levelChunk.level instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance) {
++            return true;
++        }
++        // Plaza end - Slime World prevents vanilla chunk saving
+         return chunk instanceof LevelChunk levelChunk && levelChunk.mustNotSave;
+     }
+ 

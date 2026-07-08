@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:20:00 +0200
+Subject: [PATCH] Slime World chunk load hook
+
+Routes chunk data loading for PlazaSlimeLevelInstance worlds through the
+Slime in-memory world instead of Moonrise's region file loader.
+
+diff --git a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/task/ChunkLoadTask.java b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/task/ChunkLoadTask.java
+index 7463cf5bf871033a0e5f6d54dd0d427c474d7cd4..a9a038d7aa122a50f61263ed302fbbe3b8d62dee 100644
+--- a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/task/ChunkLoadTask.java
++++ b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/task/ChunkLoadTask.java
+@@ -33,7 +33,7 @@ public final class ChunkLoadTask extends ChunkProgressionTask {
+     private static final Logger LOGGER = LoggerFactory.getLogger(ChunkLoadTask.class);
+ 
+     private final NewChunkHolder chunkHolder;
+-    private final ChunkDataLoadTask loadTask;
++    private final org.plazamc.server.slime.nms.PlazaCommonLoadTask loadTask; // Plaza - Slime World chunk load hook
+ 
+     private volatile boolean cancelled;
+     private NewChunkHolder.GenericDataLoadTaskCallback entityLoadTask;
+@@ -45,11 +45,20 @@ public final class ChunkLoadTask extends ChunkProgressionTask {
+                          final NewChunkHolder chunkHolder, final Priority priority) {
+         super(scheduler, world, chunkX, chunkZ);
+         this.chunkHolder = chunkHolder;
+-        this.loadTask = new ChunkDataLoadTask(scheduler, world, chunkX, chunkZ, priority);
+-        this.loadTask.addCallback((final GenericDataLoadTask.TaskResult<ChunkAccess, Throwable> result) -> {
+-            ChunkLoadTask.this.loadResult = result; // must be before getAndDecrement
+-            ChunkLoadTask.this.tryCompleteLoad();
+-        });
++        // Plaza start - Slime World chunk load hook
++        if (world instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance levelInstance) {
++            this.loadTask = levelInstance.getLoadTask(this, scheduler, world, chunkX, chunkZ, priority, result -> {
++                ChunkLoadTask.this.loadResult = result; // must be before getAndDecrement
++                ChunkLoadTask.this.tryCompleteLoad();
++            });
++        } else {
++            this.loadTask = new ChunkDataLoadTask(scheduler, world, chunkX, chunkZ, priority);
++            ((ChunkDataLoadTask) this.loadTask).addCallback((final GenericDataLoadTask.TaskResult<ChunkAccess, Throwable> result) -> {
++                ChunkLoadTask.this.loadResult = result; // must be before getAndDecrement
++                ChunkLoadTask.this.tryCompleteLoad();
++            });
++        }
++        // Plaza end - Slime World chunk load hook
+     }
+ 
+     private void tryCompleteLoad() {
+@@ -276,7 +285,7 @@ public final class ChunkLoadTask extends ChunkProgressionTask {
+ 
+     private static record ReadChunk(ProtoChunk protoChunk, SerializableChunkData chunkData) {}
+ 
+-    private static final class ChunkDataLoadTask extends CallbackDataLoadTask<ReadChunk, ChunkAccess> {
++    private static final class ChunkDataLoadTask extends CallbackDataLoadTask<ReadChunk, ChunkAccess> implements org.plazamc.server.slime.nms.PlazaCommonLoadTask { // Plaza - Slime World chunk load hook
+         private ChunkDataLoadTask(final ChunkTaskScheduler scheduler, final ServerLevel world, final int chunkX,
+                                   final int chunkZ, final Priority priority) {
+             super(scheduler, world, chunkX, chunkZ, MoonriseRegionFileIO.RegionFileType.CHUNK_DATA, priority);

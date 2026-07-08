@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:35:00 +0200
+Subject: [PATCH] Slime World default bootstrap
+
+Loads or creates default Slime worlds before Paper's world loader runs,
+so the Slime overrides can short-circuit vanilla overworld/nether/end
+creation.
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 83872b4b60d3e97defcf7e8ee7c21a561114392b..572c530b62ef2bfd3d4f161a73de8a3c9fd9f947 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -603,6 +603,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         ProfiledDuration profiledDuration = JvmProfiler.INSTANCE.onWorldLoadedStarted();
+         // Paper start - rework world loading process
+         io.papermc.paper.world.PaperWorldLoader loader = io.papermc.paper.world.PaperWorldLoader.create(this, levelId);
++        org.plazamc.server.slime.PlazaSlimeWorldBootstrap.bootstrapDefaultWorlds(this); // Plaza - Slime World default bootstrap
+         loader.loadInitialWorlds();
+         // Paper end - rework world loading process
+         if (profiledDuration != null) {

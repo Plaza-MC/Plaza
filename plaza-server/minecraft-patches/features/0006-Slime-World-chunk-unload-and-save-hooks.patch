@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:25:00 +0200
+Subject: [PATCH] Slime World chunk unload and save hooks
+
+On chunk unload, convert the live LevelChunk back to a Slime chunk for
+in-memory storage. Also prevent Moonrise from writing entities and chunks
+to vanilla region files for PlazaSlimeLevelInstance worlds.
+
+diff --git a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
+index 9a9a599ef178f851ee5c783631a724013a693586..069db9c94f588f7e866a15742049a5564f033dc8 100644
+--- a/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
++++ b/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
+@@ -887,6 +887,11 @@ public final class NewChunkHolder {
+             }
+ 
+             if (chunk instanceof LevelChunk levelChunk) {
++                // Plaza start - Slime World unload hook
++                if (this.world instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance instance) {
++                    instance.unload(levelChunk, entityChunk, poiChunk);
++                }
++                // Plaza end - Slime World unload hook
+                 this.world.unload(levelChunk);
+             }
+ 
+@@ -896,7 +901,11 @@ public final class NewChunkHolder {
+         // unload entity data
+         if (entityChunk != null) {
+             final Completable<CompoundTag>[] entityWrite = new Completable[1];
+-            this.saveEntities(entityChunk, true, entityWrite);
++            // Plaza start - Slime World prevents vanilla entity saving
++            if (!(this.world instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance)) {
++                this.saveEntities(entityChunk, true, entityWrite);
++            }
++            // Plaza end - Slime World prevents vanilla entity saving
+ 
+             if (entityChunk.unload()) {
+                 final ReentrantAreaLock.Node schedulingLock = this.scheduler.schedulingLockArea.lock(this.chunkX, this.chunkZ);
+@@ -1683,6 +1692,12 @@ public final class NewChunkHolder {
+         boolean canSavePOI = !forceNoSaveChunk && (poi != null && poi.isDirty());
+         boolean canSaveEntities = entities != null;
+ 
++        // Plaza start - Slime World prevents vanilla entity saving
++        if (this.world instanceof org.plazamc.server.slime.nms.PlazaSlimeLevelInstance) {
++            canSaveEntities = false;
++        }
++        // Plaza end - Slime World prevents vanilla entity saving
++
+         if (canSaveChunk) {
+             canSaveChunk = this.saveChunk(chunk, false, null);
+         }

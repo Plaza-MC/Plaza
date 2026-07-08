@@ -10,6 +10,7 @@ import org.bukkit.World;
 import org.bukkit.WorldBorder;
 import org.plazamc.server.PlazaConfig;
 import org.plazamc.server.generator.PlazaVoidChunkGenerator;
+import org.plazamc.server.slime.nms.PlazaSlimeLevelInstance;
 
 /**
  * Runtime world defaults for Plaza's plugin-driven profile.
@@ -45,7 +46,7 @@ public final class PlazaWorldDefaults {
     }
 
     private static boolean isPlazaVoidWorld(final ServerLevel level) {
-        return level.generator instanceof PlazaVoidChunkGenerator;
+        return level.generator instanceof PlazaVoidChunkGenerator || level instanceof PlazaSlimeLevelInstance;
     }
 
     private static void forceCenteredSpawn(final ServerLevel level) {

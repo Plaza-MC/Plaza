@@ -52,6 +52,34 @@ public final class PlazaConfig {
         return config().getBoolean("slime-worlds.enabled", true);
     }
 
+    public static String slimeWorldsStorage() {
+        return config().getString("slime-worlds.storage", "file");
+    }
+
+    public static File slimeWorldsDirectory() {
+        return new File(config().getString("slime-worlds.worlds-directory", "slime_worlds"));
+    }
+
+    public static String slimeDefaultBiome() {
+        return config().getString("slime-worlds.default-biome", "minecraft:plains");
+    }
+
+    public static boolean slimeReadOnly() {
+        return config().getBoolean("slime-worlds.read-only", false);
+    }
+
+    public static boolean slimeSavePoi() {
+        return config().getBoolean("slime-worlds.save-poi", true);
+    }
+
+    public static boolean slimeSaveBlockTicks() {
+        return config().getBoolean("slime-worlds.save-block-ticks", false);
+    }
+
+    public static boolean slimeSaveFluidTicks() {
+        return config().getBoolean("slime-worlds.save-fluid-ticks", false);
+    }
+
     public static boolean disableDefaultNether() {
         return config().getBoolean("plugin-driven.disable-default-nether", true);
     }
@@ -102,6 +130,11 @@ public final class PlazaConfig {
         config.addDefault("slime-worlds.enabled", true);
         config.addDefault("slime-worlds.storage", "file");
         config.addDefault("slime-worlds.worlds-directory", "slime_worlds");
+        config.addDefault("slime-worlds.default-biome", "minecraft:plains");
+        config.addDefault("slime-worlds.read-only", false);
+        config.addDefault("slime-worlds.save-poi", true);
+        config.addDefault("slime-worlds.save-block-ticks", false);
+        config.addDefault("slime-worlds.save-fluid-ticks", false);
     }
 
     private static void save() {

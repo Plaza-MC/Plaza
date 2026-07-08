@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:15:00 +0200
+Subject: [PATCH] Slime World default overrides
+
+When Plaza has default Slime worlds registered, skip the vanilla
+overworld/nether/end creation path in PaperWorldLoader so the live
+ServerLevel instances created by PlazaSlimeNMSBridge are used instead.
+
+diff --git a/src/main/java/io/papermc/paper/world/PaperWorldLoader.java b/src/main/java/io/papermc/paper/world/PaperWorldLoader.java
+index 4dc03fbccbf87feb04601747374898e002982c63..9f1a0adcd710681e925301b34b786e91718014ac 100644
+--- a/src/main/java/io/papermc/paper/world/PaperWorldLoader.java
++++ b/src/main/java/io/papermc/paper/world/PaperWorldLoader.java
+@@ -3,6 +3,7 @@ package io.papermc.paper.world;
+ import com.google.common.io.Files;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.Dynamic;
++import net.minecraft.core.Registry;
+ import net.minecraft.core.registries.Registries;
+ import net.minecraft.nbt.NbtException;
+ import net.minecraft.nbt.ReportedNbtException;
+@@ -108,7 +109,21 @@ public record PaperWorldLoader(MinecraftServer server, String levelId) {
+ 
+     // Loosely modeled on code in net.minecraft.server.Main
+     public void loadInitialWorlds() {
+-        for (final LevelStem stem : this.server.registryAccess().lookupOrThrow(Registries.LEVEL_STEM)) {
++        // Plaza start - Slime World default overrides
++        Registry<LevelStem> registry = this.server.registryAccess().lookupOrThrow(Registries.LEVEL_STEM);
++        for (final LevelStem stem : registry) {
++            ResourceKey<LevelStem> levelStemKey = registry.getResourceKey(stem).orElseThrow();
++            if (levelStemKey == LevelStem.NETHER && org.plazamc.server.slime.nms.PlazaSlimeNMSBridge.instance().loadNetherOverride()) {
++                continue;
++            }
++            if (levelStemKey == LevelStem.END && org.plazamc.server.slime.nms.PlazaSlimeNMSBridge.instance().loadEndOverride()) {
++                continue;
++            }
++            if (levelStemKey == LevelStem.OVERWORLD && org.plazamc.server.slime.nms.PlazaSlimeNMSBridge.instance().loadOverworldOverride()) {
++                continue;
++            }
++            // Plaza end - Slime World default overrides
++
+             final WorldLoadingInfo info = this.getWorldInfo(this.levelId, stem);
+             this.migrateWorldFolder(info);
+             if (!info.enabled()) {

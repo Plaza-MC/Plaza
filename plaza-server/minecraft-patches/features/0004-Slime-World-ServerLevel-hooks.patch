@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Tue, 7 Jul 2026 18:05:00 +0200
+Subject: [PATCH] Slime World ServerLevel hooks
+
+Adds the minimal hooks required for PlazaSlimeLevelInstance to extend
+ServerLevel: a bootstrap-aware constructor, a field to hold the in-memory
+Slime world, and a generator hook used by SlimeLevelGenerator.
+
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index a795ceebd304d7c4bba2a48b7722e1cc464366f2..8c9e3a61ae8ac1b683b8d19ea487b3713d1e17db 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -305,8 +305,8 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     // Paper start - rewrite chunk system
+     private final ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader.ViewDistanceHolder viewDistanceHolder = new ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader.ViewDistanceHolder();
+     private final ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader chunkLoader = new ca.spottedleaf.moonrise.patches.chunk_system.player.RegionizedPlayerChunkLoader((ServerLevel)(Object)this);
+-    private final ca.spottedleaf.moonrise.patches.chunk_system.io.datacontroller.EntityDataController entityDataController;
+-    private final ca.spottedleaf.moonrise.patches.chunk_system.io.datacontroller.PoiDataController poiDataController;
++    protected ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO.RegionDataController entityDataController; // Plaza - Slime World allow subclass override
++    protected ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO.RegionDataController poiDataController; // Plaza - Slime World allow subclass override
+     private final ca.spottedleaf.moonrise.patches.chunk_system.io.datacontroller.ChunkDataController chunkDataController;
+     private final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkTaskScheduler chunkTaskScheduler;
+     private long lastMidTickFailure;
+@@ -598,6 +598,9 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     }
+     // Paper end - chunk tick iteration
+ 
++    // Plaza start - Slime World hooks
++    public org.plazamc.server.slime.nms.PlazaSlimeInMemoryWorld slimeInstance;
++
+     public ServerLevel(
+         MinecraftServer server,
+         Executor dispatcher,
+@@ -614,6 +617,28 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         org.bukkit.generator.ChunkGenerator gen, // CraftBukkit
+         org.bukkit.generator.BiomeProvider biomeProvider // CraftBukkit
+     ) {
++        this(null, server, dispatcher, levelStorageAccess, serverLevelData, dimension, levelStem,
++            isDebug, biomeZoomSeed, customSpawners, tickTime, randomSequences, env, gen, biomeProvider);
++    }
++
++    public ServerLevel(
++        org.plazamc.server.slime.nms.PlazaSlimeBootstrap bootstrap,
++        MinecraftServer server,
++        Executor dispatcher,
++        LevelStorageSource.LevelStorageAccess levelStorageAccess,
++        net.minecraft.world.level.storage.PrimaryLevelData serverLevelData, // CraftBukkit
++        ResourceKey<Level> dimension,
++        LevelStem levelStem,
++        boolean isDebug,
++        long biomeZoomSeed,
++        List<CustomSpawner> customSpawners,
++        boolean tickTime,
++        @Nullable RandomSequences randomSequences,
++        org.bukkit.World.Environment env, // CraftBukkit
++        org.bukkit.generator.ChunkGenerator gen, // CraftBukkit
++        org.bukkit.generator.BiomeProvider biomeProvider // CraftBukkit
++    ) {
++        // Plaza end - Slime World hooks
+         // CraftBukkit start
+         super(serverLevelData, dimension, server.registryAccess(), levelStem.type(), false, isDebug, biomeZoomSeed, server.getMaxChainedNeighborUpdates(), gen, biomeProvider, env, spigotConfig -> server.paperConfigurations.createWorldConfig(io.papermc.paper.configuration.PaperConfigurations.createWorldContextMap(levelStorageAccess.levelDirectory.path(), serverLevelData.getLevelName(), dimension.identifier(), spigotConfig, server.registryAccess(), serverLevelData.getGameRules())), dispatcher); // Paper - create paper world configs & Async-Anti-Xray: Pass executor
+         this.levelStorageAccess = levelStorageAccess;
+@@ -641,6 +666,12 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+             chunkGenerator = new org.bukkit.craftbukkit.generator.CustomChunkGenerator(this, chunkGenerator, gen);
+         }
+         // CraftBukkit end
++        // Plaza start - Slime World generator override
++        ChunkGenerator slimeGenerator = this.getGenerator(bootstrap);
++        if (slimeGenerator != null) {
++            chunkGenerator = slimeGenerator;
++        }
++        // Plaza end - Slime World generator override
+         boolean flag = server.forceSynchronousWrites();
+         DataFixer fixerUpper = server.getFixerUpper();
+         // Paper - rewrite chunk system
+@@ -724,6 +755,12 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         this.dragonFight = dragonFight;
+     }
+ 
++    // Plaza start - Slime World generator hook
++    public ChunkGenerator getGenerator(org.plazamc.server.slime.nms.PlazaSlimeBootstrap bootstrap) {
++        return null;
++    }
++    // Plaza end - Slime World generator hook
++
+     public void setWeatherParameters(int clearTime, int weatherTime, boolean isRaining, boolean isThundering) {
+         this.serverLevelData.setClearWeatherTime(clearTime);
+         this.serverLevelData.setRainTime(weatherTime);
