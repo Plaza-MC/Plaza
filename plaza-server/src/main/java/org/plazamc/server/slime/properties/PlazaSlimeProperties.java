@@ -11,7 +11,7 @@ import org.plazamc.server.slime.properties.type.PlazaSlimePropertyString;
 public class PlazaSlimeProperties {
 
     public static final PlazaSlimePropertyInt SPAWN_X = PlazaSlimePropertyInt.create("spawnX", 0);
-    public static final PlazaSlimePropertyInt SPAWN_Y = PlazaSlimePropertyInt.create("spawnY", 255);
+    public static final PlazaSlimePropertyInt SPAWN_Y = PlazaSlimePropertyInt.create("spawnY", 64);
     public static final PlazaSlimePropertyInt SPAWN_Z = PlazaSlimePropertyInt.create("spawnZ", 0);
     public static final PlazaSlimePropertyFloat SPAWN_YAW = PlazaSlimePropertyFloat.create("spawnYaw", 0.0f);
 

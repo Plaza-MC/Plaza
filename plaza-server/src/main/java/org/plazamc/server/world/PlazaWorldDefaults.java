@@ -55,6 +55,12 @@ public final class PlazaWorldDefaults {
             return;
         }
 
+        // Only force the spawn for empty Slime worlds (no saved chunks). Imported or built worlds
+        // keep their own spawn so that minigame/lobby maps behave as their creators intended.
+        if (level instanceof PlazaSlimeLevelInstance slimeLevel && !slimeLevel.slimeInstance.getChunkStorage().isEmpty()) {
+            return;
+        }
+
         level.serverLevelData.setSpawn(LevelData.RespawnData.of(level.dimension(), PLAZA_SPAWN, SPAWN_YAW, SPAWN_PITCH));
     }
 

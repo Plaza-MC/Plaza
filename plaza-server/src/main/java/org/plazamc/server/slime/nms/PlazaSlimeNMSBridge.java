@@ -52,6 +52,7 @@ public final class PlazaSlimeNMSBridge {
         }
 
         PlazaSlimeLevelInstance instance = this.loadInstance(defaultWorld, Level.OVERWORLD).getInstance();
+        org.plazamc.server.world.PlazaWorldManager.registerLoadedWorld(defaultWorld, instance.getWorld());
         DimensionDataStorage worldPersistentData = instance.getDataStorage();
         instance.getCraftServer().scoreboardManager = new org.bukkit.craftbukkit.scoreboard.CraftScoreboardManager(instance.getServer(), instance.getScoreboard());
         try {
@@ -61,6 +62,10 @@ public final class PlazaSlimeNMSBridge {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Could not install command storage for Slime overworld", e);
         }
+
+        // The Slime overworld is now live; load any configured Anvil worlds that were
+        // deferred because they need a valid overworld to call Bukkit.createWorld().
+        org.plazamc.server.world.PlazaWorldManager.loadDeferredAnvilWorlds();
 
         return true;
     }
@@ -128,6 +133,7 @@ public final class PlazaSlimeNMSBridge {
         MinecraftServer mcServer = MinecraftServer.getServer();
         mcServer.initWorld(server, server.serverLevelData, server.serverLevelData.worldGenOptions());
         mcServer.addLevel(server);
+        org.plazamc.server.world.PlazaWorldDefaults.applyOnWorldLoad(server);
     }
 
     private PlazaSlimeLevelInstance createCustomWorld(PlazaSlimeWorld world, @Nullable ResourceKey<Level> dimensionOverride) {

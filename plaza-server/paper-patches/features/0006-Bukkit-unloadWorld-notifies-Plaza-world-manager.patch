@@ -6,11 +6,15 @@ Subject: [PATCH] Bukkit unloadWorld notifies Plaza world manager
 Keeps Plaza's loaded-world map in sync when a world is unloaded through
 the standard Bukkit API (e.g. by Multiverse or other legacy plugins).
 
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 2a82858101765d2b067df98724c7469bc0585bbd..cd388189fe59d3b7d3b723ec32d084764c3e4341 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -1382,4 +1382,5 @@ public final class CraftServer implements Server {
+@@ -1380,6 +1380,7 @@ public final class CraftServer implements Server {
+ 
          this.worlds.remove(world.getName().toLowerCase(Locale.ROOT));
          this.console.removeLevel(handle);
 +        org.plazamc.server.world.PlazaWorldManager.onWorldUnload(world.getName()); // Plaza - keep Plaza world tracking in sync
          return true;
      }
+ 

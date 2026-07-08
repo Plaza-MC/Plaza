@@ -14,6 +14,7 @@ import org.plazamc.server.command.world.subcommands.WorldCloneSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldCreateSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldDeleteSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldExportSubCommand;
+import org.plazamc.server.command.world.subcommands.WorldGotoSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldImportSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldInfoSubCommand;
 import org.plazamc.server.command.world.subcommands.WorldListSubCommand;
@@ -45,6 +46,7 @@ public final class PlazaWorldCommandHandler {
         register("migrate", new WorldMigrateSubCommand());
         register("import", new WorldImportSubCommand());
         register("export", new WorldExportSubCommand());
+        register("goto", new WorldGotoSubCommand());
         register("list", new WorldListSubCommand());
         register("info", new WorldInfoSubCommand());
         register("setspawn", new WorldSetSpawnSubCommand());
@@ -64,6 +66,7 @@ public final class PlazaWorldCommandHandler {
         registerPermission(pluginManager, "plaza.command.world.migrate", PermissionDefault.OP);
         registerPermission(pluginManager, "plaza.command.world.import", PermissionDefault.OP);
         registerPermission(pluginManager, "plaza.command.world.export", PermissionDefault.OP);
+        registerPermission(pluginManager, "plaza.command.world.goto", PermissionDefault.OP);
         registerPermission(pluginManager, "plaza.command.world.list", PermissionDefault.OP);
         registerPermission(pluginManager, "plaza.command.world.info", PermissionDefault.OP);
         registerPermission(pluginManager, "plaza.command.world.setspawn", PermissionDefault.OP);
@@ -119,18 +122,19 @@ public final class PlazaWorldCommandHandler {
 
     public static void sendUsage(final CommandSender sender) {
         PlazaCommand.send(sender, "&ePlaza world commands:");
-        PlazaCommand.send(sender, "&b/plaza world create <name> [source]");
+        PlazaCommand.send(sender, "&b/plaza world create <name> [source] [format]");
         PlazaCommand.send(sender, "&b/plaza world load <name>");
         PlazaCommand.send(sender, "&b/plaza world unload <name> [save]");
         PlazaCommand.send(sender, "&b/plaza world delete <name>");
         PlazaCommand.send(sender, "&b/plaza world clone <source> <target>");
         PlazaCommand.send(sender, "&b/plaza world migrate <name> <new-source>");
         PlazaCommand.send(sender, "&b/plaza world import <folder> <name> [source]");
-        PlazaCommand.send(sender, "&b/plaza world export <name> <folder>");
+        PlazaCommand.send(sender, "&b/plaza world export [name] <folder>");
+        PlazaCommand.send(sender, "&b/plaza world goto <world>");
         PlazaCommand.send(sender, "&b/plaza world list");
-        PlazaCommand.send(sender, "&b/plaza world info <name>");
+        PlazaCommand.send(sender, "&b/plaza world info [name]");
         PlazaCommand.send(sender, "&b/plaza world setspawn <name>");
-        PlazaCommand.send(sender, "&b/plaza world save <name>");
+        PlazaCommand.send(sender, "&b/plaza world save [name]");
     }
 
     public static List<String> filter(final List<String> options, final String input) {

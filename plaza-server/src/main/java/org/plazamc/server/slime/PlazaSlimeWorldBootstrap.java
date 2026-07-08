@@ -28,7 +28,8 @@ public final class PlazaSlimeWorldBootstrap {
     }
 
     public static void bootstrapDefaultWorlds(final MinecraftServer server) {
-        PlazaWorldManager.init();
+        final String levelName = ((DedicatedServer) server).getProperties().levelName;
+        PlazaWorldManager.init(levelName);
 
         if (!PlazaConfig.slimeWorldsEnabled()) {
             return;
@@ -40,7 +41,6 @@ public final class PlazaSlimeWorldBootstrap {
             return;
         }
 
-        final String levelName = ((DedicatedServer) server).getProperties().levelName;
         final PlazaSlimeLoader loader = createLoader();
 
         // Default overworld: shadow folder is created internally by MinecraftServer,
@@ -63,7 +63,9 @@ public final class PlazaSlimeWorldBootstrap {
 
         final PlazaSlimeLoader loader = createLoader();
         final PlazaSlimeWorld world = loadOrCreateWorld(loader, name, environment, true);
-        return PlazaSlimeNMSBridge.instance().loadInstance(world).getInstance().getWorld();
+        final World bukkitWorld = PlazaSlimeNMSBridge.instance().loadInstance(world).getInstance().getWorld();
+        PlazaWorldManager.registerLoadedWorld(world, bukkitWorld);
+        return bukkitWorld;
     }
 
     private static PlazaSlimeLoader createLoader() {

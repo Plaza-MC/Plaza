@@ -6,6 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.plazamc.api.PlazaAPI;
 import org.plazamc.api.world.PlazaWorldInstance;
@@ -23,13 +24,23 @@ public final class WorldExportSubCommand implements PlazaCommandInterface, Plaza
         if (!PlazaWorldCommandHandler.checkPermission(sender, "plaza.command.world.export")) {
             return true;
         }
-        if (args.length < 2) {
-            PlazaCommand.send(sender, "&cUsage: /plaza world export <name> <folder>");
-            return true;
-        }
 
-        final String name = args[0];
-        final File folder = new File(args[1]);
+        final String name;
+        final File folder;
+        if (args.length < 1) {
+            PlazaCommand.send(sender, "&cUsage: /plaza world export [name] <folder>");
+            return true;
+        } else if (args.length == 1) {
+            if (!(sender instanceof Player player)) {
+                PlazaCommand.send(sender, "&cUsage: /plaza world export [name] <folder>");
+                return true;
+            }
+            name = player.getWorld().getName();
+            folder = new File(args[0]);
+        } else {
+            name = args[0];
+            folder = new File(args[1]);
+        }
         final PlazaWorldInstance instance = PlazaAPI.instance().getLoadedWorld(name);
         if (instance == null) {
             PlazaCommand.send(sender, "&cWorld '" + name + "' is not loaded.");

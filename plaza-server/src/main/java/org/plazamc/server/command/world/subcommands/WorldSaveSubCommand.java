@@ -6,6 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.plazamc.api.PlazaAPI;
 import org.plazamc.api.world.PlazaWorldInstance;
@@ -23,12 +24,18 @@ public final class WorldSaveSubCommand implements PlazaCommandInterface, PlazaWo
         if (!PlazaWorldCommandHandler.checkPermission(sender, "plaza.command.world.save")) {
             return true;
         }
+
+        final String name;
         if (args.length < 1) {
-            PlazaCommand.send(sender, "&cUsage: /plaza world save <name>");
-            return true;
+            if (!(sender instanceof Player player)) {
+                PlazaCommand.send(sender, "&cUsage: /plaza world save [name]");
+                return true;
+            }
+            name = player.getWorld().getName();
+        } else {
+            name = args[0];
         }
 
-        final String name = args[0];
         final PlazaWorldInstance instance = PlazaAPI.instance().getLoadedWorld(name);
         if (instance == null) {
             PlazaCommand.send(sender, "&cWorld '" + name + "' is not loaded.");

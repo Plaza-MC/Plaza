@@ -5,10 +5,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.world.PlazaWorldLoader;
 import org.plazamc.server.PlazaConfig;
+import org.plazamc.server.world.loader.mongodb.PlazaMongoWorldLoader;
+import org.plazamc.server.world.loader.sql.PlazaSqlWorldLoader;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -32,15 +35,24 @@ public final class PlazaWorldSourceRegistry {
                 continue;
             }
 
-            if (!section.getBoolean("enabled", true)) {
+            String type = section.getString("type", sourceName).toLowerCase();
+            // Database sources default to disabled unless explicitly enabled.
+            boolean defaultEnabled = switch (type) {
+                case "sql", "mongodb" -> false;
+                default -> true;
+            };
+            if (!section.getBoolean("enabled", defaultEnabled)) {
                 continue;
             }
 
-            String type = section.getString("type", sourceName).toLowerCase();
-            PlazaWorldLoader loader = createLoader(sourceName, type, section);
-            if (loader != null) {
-                LOADERS.put(sourceName, loader);
-                LOGGER.info("Registered Plaza world source '" + sourceName + "' (type: " + type + ")");
+            try {
+                PlazaWorldLoader loader = createLoader(sourceName, type);
+                if (loader != null) {
+                    LOADERS.put(sourceName.toLowerCase(), loader);
+                    LOGGER.info("Registered Plaza world source '" + sourceName + "' (type: " + type + ")");
+                }
+            } catch (final Exception ex) {
+                LOGGER.log(Level.SEVERE, "Could not initialize Plaza world source '" + sourceName + "' (type: " + type + "). Skipping.", ex);
             }
         }
     }
@@ -64,17 +76,11 @@ public final class PlazaWorldSourceRegistry {
     }
 
     @Nullable
-    private static PlazaWorldLoader createLoader(String sourceName, String type, ConfigurationSection section) {
+    private static PlazaWorldLoader createLoader(String sourceName, String type) {
         return switch (type) {
-            case "file" -> new PlazaFileWorldLoader(new File(section.getString("path", "plaza_worlds")));
-            case "mysql" -> {
-                LOGGER.warning("MySQL world source is not implemented yet: " + sourceName);
-                yield null;
-            }
-            case "mongodb" -> {
-                LOGGER.warning("MongoDB world source is not implemented yet: " + sourceName);
-                yield null;
-            }
+            case "file" -> new PlazaFileWorldLoader(new File(PlazaConfig.plazaWorldsSourceConfig(sourceName).getString("path", "plaza_worlds")));
+            case "sql" -> new PlazaSqlWorldLoader(sourceName);
+            case "mongodb" -> new PlazaMongoWorldLoader(sourceName);
             default -> {
                 LOGGER.warning("Unknown Plaza world source type '" + type + "' for source " + sourceName);
                 yield null;

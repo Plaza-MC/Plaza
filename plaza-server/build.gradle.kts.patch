@@ -43,7 +43,7 @@
  configurations.named(log4jPlugins.compileClasspathConfigurationName) {
      extendsFrom(configurations.compileClasspath.get())
  }
-@@ -127,7 +_,11 @@
+@@ -127,7 +_,15 @@
  }
  
  dependencies {
@@ -53,6 +53,10 @@
 +    implementation("net.kyori:adventure-nbt:4.26.1")
 +    implementation("com.github.luben:zstd-jni:1.5.6-9")
 +    // Plaza end - Slime format layer
++    // Plaza start - World data sources
++    implementation("com.zaxxer:HikariCP:6.2.1")
++    implementation("org.mongodb:mongodb-driver-sync:5.4.0")
++    // Plaza end - World data sources
      implementation("ca.spottedleaf:concurrentutil:0.0.8")
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
      implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21

@@ -2,6 +2,7 @@ package org.plazamc.server.world;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,13 +41,18 @@ public final class PlazaWorldManager {
 
     private static final Logger LOGGER = Logger.getLogger("Plaza");
     private static final Map<String, PlazaWorldInstance> LOADED_WORLDS = new ConcurrentHashMap<>();
+    private static final java.util.List<String> DEFERRED_ANVIL_WORLDS = new java.util.ArrayList<>();
 
     private PlazaWorldManager() {
     }
 
     public static void init() {
+        init(null);
+    }
+
+    public static void init(String defaultWorldNameToSkip) {
         PlazaWorldSourceRegistry.load();
-        loadConfiguredWorlds();
+        loadConfiguredWorlds(defaultWorldNameToSkip);
     }
 
     public static void reload() {
@@ -54,9 +60,28 @@ public final class PlazaWorldManager {
     }
 
     public static void loadConfiguredWorlds() {
+        loadConfiguredWorlds(null);
+    }
+
+    public static void loadConfiguredWorlds(String defaultWorldNameToSkip) {
         ConfigurationSection worlds = PlazaConfig.plazaWorldsWorlds();
         for (String worldName : worlds.getKeys(false)) {
+            if (defaultWorldNameToSkip != null && defaultWorldNameToSkip.equals(worldName)) {
+                // The default world is bootstrapped separately by PlazaSlimeWorldBootstrap.
+                continue;
+            }
+
             if (!PlazaConfig.plazaWorldsWorldLoadOnStartup(worldName)) {
+                continue;
+            }
+
+            String format = PlazaConfig.plazaWorldsWorldFormat(worldName);
+            LOGGER.info("Configured world '" + worldName + "' has format: " + format);
+            if ("ANVIL".equalsIgnoreCase(format)) {
+                // Anvil worlds rely on Bukkit.createWorld(), which needs the overworld ready.
+                // During early bootstrap it is not available yet, so defer Anvil loading.
+                LOGGER.info("Deferring Anvil world '" + worldName + "' until after bootstrap.");
+                DEFERRED_ANVIL_WORLDS.add(worldName);
                 continue;
             }
 
@@ -74,6 +99,44 @@ public final class PlazaWorldManager {
                 LOGGER.log(Level.SEVERE, "Could not load Plaza world " + worldName, ex);
             }
         }
+    }
+
+    /**
+     * Loads any configured Anvil worlds that were deferred during early bootstrap.
+     * This must be called once the overworld is fully initialised.
+     */
+    public static void loadDeferredAnvilWorlds() {
+        LOGGER.info("Loading deferred Anvil worlds: " + DEFERRED_ANVIL_WORLDS);
+        if (DEFERRED_ANVIL_WORLDS.isEmpty()) {
+            return;
+        }
+
+        for (final String worldName : DEFERRED_ANVIL_WORLDS) {
+            try {
+                LOGGER.info("Loading deferred Anvil world '" + worldName + "'.");
+                loadAnvilWorld(worldName);
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Could not load deferred Anvil world " + worldName, ex);
+            }
+        }
+        DEFERRED_ANVIL_WORLDS.clear();
+    }
+
+    public static void loadAnvilWorld(final String worldName) {
+        if (Bukkit.getWorld(worldName) != null) {
+            return;
+        }
+
+        final WorldCreator creator = new WorldCreator(worldName)
+            .environment(World.Environment.NORMAL)
+            .generator(new org.plazamc.server.generator.PlazaVoidChunkGenerator());
+        final World bukkitWorld = creator.createWorld();
+        if (bukkitWorld == null) {
+            LOGGER.warning("Could not load Anvil world '" + worldName + "'");
+            return;
+        }
+
+        registerLoadedWorld(new PlazaAnvilWorld(worldName, false), bukkitWorld);
     }
 
     @NotNull
@@ -95,8 +158,9 @@ public final class PlazaWorldManager {
     @NotNull
     public static PlazaWorldInstance loadWorld(@NotNull PlazaWorld world, boolean callWorldLoadEvent) {
         String worldName = world.getName();
-        if (Bukkit.getWorld(worldName) != null) {
-            throw new IllegalArgumentException("World " + worldName + " is already loaded");
+        PlazaWorldInstance existing = LOADED_WORLDS.get(worldName);
+        if (existing != null) {
+            return existing;
         }
 
         if (!(world instanceof PlazaSlimeWorld slimeWorld)) {
@@ -106,6 +170,30 @@ public final class PlazaWorldManager {
         PlazaWorldInstance instance = new PlazaSlimeWorldInstance(slimeWorld, callWorldLoadEvent);
         LOADED_WORLDS.put(worldName, instance);
 
+        Bukkit.getPluginManager().callEvent(new PlazaWorldLoadEvent(instance));
+        return instance;
+    }
+
+    /**
+     * Registers a world that has already been loaded into NMS/Bukkit (for example
+     * the default overworld or a world created through the Bukkit API) so that
+     * Plaza's world manager can track it.
+     */
+    @NotNull
+    public static PlazaWorldInstance registerLoadedWorld(@NotNull PlazaWorld worldData, @NotNull World bukkitWorld) {
+        String worldName = worldData.getName();
+        PlazaWorldInstance existing = LOADED_WORLDS.get(worldName);
+        if (existing != null) {
+            return existing;
+        }
+
+        PlazaWorldInstance instance;
+        if (worldData instanceof PlazaSlimeWorld slimeWorld) {
+            instance = new PlazaSlimeWorldInstance(slimeWorld, bukkitWorld);
+        } else {
+            instance = new PlazaBukkitWorldInstance(worldData, bukkitWorld);
+        }
+        LOADED_WORLDS.put(worldName, instance);
         Bukkit.getPluginManager().callEvent(new PlazaWorldLoadEvent(instance));
         return instance;
     }
@@ -168,6 +256,16 @@ public final class PlazaWorldManager {
             unloadWorld(worldName, false);
         }
 
+        if ("ANVIL".equalsIgnoreCase(PlazaConfig.plazaWorldsWorldFormat(worldName))) {
+            final java.io.File folder = new java.io.File(Bukkit.getWorldContainer(), worldName);
+            if (folder.exists()) {
+                deleteRecursively(folder);
+            }
+            PlazaConfig.config().set("plaza-worlds.worlds." + worldName, null);
+            PlazaConfig.save();
+            return;
+        }
+
         // Determine the source from configuration or default to the default source.
         String sourceName = PlazaConfig.plazaWorldsWorldSource(worldName);
         PlazaWorldLoader loader = PlazaWorldSourceRegistry.getLoader(sourceName);
@@ -177,6 +275,18 @@ public final class PlazaWorldManager {
 
         loader.deleteWorld(worldName);
         PlazaWorldShadow.delete(worldName);
+    }
+
+    private static void deleteRecursively(final java.io.File file) {
+        final java.io.File[] children = file.listFiles();
+        if (children != null) {
+            for (final java.io.File child : children) {
+                deleteRecursively(child);
+            }
+        }
+        if (!file.delete()) {
+            LOGGER.warning("Could not delete path: " + file);
+        }
     }
 
     @NotNull
@@ -264,6 +374,39 @@ public final class PlazaWorldManager {
             if (callWorldLoadEvent) {
                 Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.WorldLoadEvent(this.bukkitWorld));
             }
+        }
+
+        PlazaSlimeWorldInstance(PlazaSlimeWorld worldData, World bukkitWorld) {
+            this.worldData = worldData;
+            this.bukkitWorld = bukkitWorld;
+        }
+
+        @Override
+        @NotNull
+        public PlazaWorld getWorldData() {
+            return this.worldData;
+        }
+
+        @Override
+        @NotNull
+        public World getBukkitWorld() {
+            return this.bukkitWorld;
+        }
+
+        @Override
+        public boolean isLoaded() {
+            return LOADED_WORLDS.containsKey(this.worldData.getName());
+        }
+    }
+
+    private static final class PlazaBukkitWorldInstance implements PlazaWorldInstance {
+
+        private final PlazaWorld worldData;
+        private final World bukkitWorld;
+
+        PlazaBukkitWorldInstance(PlazaWorld worldData, World bukkitWorld) {
+            this.worldData = worldData;
+            this.bukkitWorld = bukkitWorld;
         }
 
         @Override
