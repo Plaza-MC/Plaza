@@ -9,6 +9,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.bukkit.World;
 import org.plazamc.server.PlazaConfig;
+import org.plazamc.server.world.PlazaWorldShadow;
 import org.plazamc.server.slime.loader.PlazaSlimeLoader;
 import org.plazamc.server.slime.loader.PlazaUnknownWorldException;
 import org.plazamc.server.slime.loader.file.PlazaFileSlimeLoader;
@@ -39,7 +40,9 @@ public final class PlazaSlimeWorldBootstrap {
         final String levelName = ((DedicatedServer) server).getProperties().levelName;
         final PlazaSlimeLoader loader = createLoader();
 
-        final PlazaSlimeWorld overworld = loadOrCreateWorld(loader, levelName, World.Environment.NORMAL);
+        // Default overworld: shadow folder is created internally by MinecraftServer,
+        // so Plaza does not need to manage it explicitly here.
+        final PlazaSlimeWorld overworld = loadOrCreateWorld(loader, levelName, World.Environment.NORMAL, false);
         // Plaza design decision: default Nether and End are always disabled.
         PlazaSlimeNMSBridge.instance().setDefaultWorlds(overworld, null, null);
     }
@@ -47,7 +50,8 @@ public final class PlazaSlimeWorldBootstrap {
     /**
      * Creates or loads a Slime world with the given name and environment, then
      * returns its Bukkit {@link World}. This is used for worlds created through
-     * the Bukkit API when {@code world.default-format} is {@code SLIME}.
+     * the Bukkit API when {@code world.default-format} is {@code SLIME}, and
+     * therefore manages the legacy shadow folder.
      */
     public static World createOrLoadWorld(final String name, final World.Environment environment) {
         if (!PlazaConfig.slimeWorldsEnabled()) {
@@ -55,7 +59,7 @@ public final class PlazaSlimeWorldBootstrap {
         }
 
         final PlazaSlimeLoader loader = createLoader();
-        final PlazaSlimeWorld world = loadOrCreateWorld(loader, name, environment);
+        final PlazaSlimeWorld world = loadOrCreateWorld(loader, name, environment, true);
         return PlazaSlimeNMSBridge.instance().loadInstance(world).getInstance().getWorld();
     }
 
@@ -68,19 +72,46 @@ public final class PlazaSlimeWorldBootstrap {
     }
 
     public static PlazaSlimeWorld loadOrCreateWorld(final PlazaSlimeLoader loader, final String name,
-                                                    final World.Environment environment) {
+                                                    final World.Environment environment,
+                                                    final boolean createShadow) {
+        final boolean shadowExists = PlazaWorldShadow.exists(name);
+
         try {
             final byte[] data = loader.readWorld(name);
-            return org.plazamc.server.slime.format.reader.PlazaSlimeWorldReaderRegistry.readWorld(loader, name, data, new PlazaSlimePropertyMap(), false);
+
+            if (createShadow && !shadowExists) {
+                // The shadow folder was deleted by a legacy plugin; treat that as
+                // a request to delete the Slime world as well.
+                try {
+                    loader.deleteWorld(name);
+                } catch (final IOException deleteEx) {
+                    Logger.getLogger("Plaza").warning("Could not delete Slime world " + name
+                        + " after its shadow folder was removed: " + deleteEx.getMessage());
+                }
+                throw new RuntimeException("Slime world " + name + " has been deleted because its shadow folder "
+                    + "is missing. This usually means a legacy plugin removed the world folder.");
+            }
+
+            final PlazaSlimeWorld world = org.plazamc.server.slime.format.reader.PlazaSlimeWorldReaderRegistry.readWorld(
+                loader, name, data, new PlazaSlimePropertyMap(), false);
+            if (createShadow) {
+                PlazaWorldShadow.create(name);
+            }
+            return world;
         } catch (final PlazaUnknownWorldException ex) {
-            return createDefaultWorld(loader, name, environment);
+            if (createShadow && shadowExists) {
+                // The Slime file is gone but the shadow folder remains; clean up.
+                PlazaWorldShadow.delete(name);
+            }
+            return createDefaultWorld(loader, name, environment, createShadow);
         } catch (final IOException ex) {
             throw new RuntimeException("Could not read Slime world " + name, ex);
         }
     }
 
     private static PlazaSlimeWorld createDefaultWorld(final PlazaSlimeLoader loader, final String name,
-                                                      final World.Environment environment) {
+                                                      final World.Environment environment,
+                                                      final boolean createShadow) {
         final PlazaSlimePropertyMap properties = new PlazaSlimePropertyMap();
         properties.setValue(PlazaSlimeProperties.ENVIRONMENT, environment.name().toLowerCase());
         properties.setValue(PlazaSlimeProperties.DIFFICULTY, "peaceful");
@@ -111,6 +142,9 @@ public final class PlazaSlimeWorldBootstrap {
             throw new RuntimeException("Could not save new Slime world " + name, ex);
         }
 
+        if (createShadow) {
+            PlazaWorldShadow.create(name);
+        }
         return world;
     }
 }

@@ -15,7 +15,7 @@ Subject: [PATCH] Bukkit API world creation respects default format
          if (chunkGenerator == null) {
              chunkGenerator = this.getGenerator(name);
          }
-@@ -1205,6 +1207,17 @@ public class CraftServer implements Server {
+@@ -1205,6 +1207,19 @@ public class CraftServer implements Server {
              biomeProvider = this.getBiomeProvider(name);
          }
  
@@ -26,7 +26,9 @@ Subject: [PATCH] Bukkit API world creation respects default format
 +        if ("SLIME".equalsIgnoreCase(org.plazamc.server.PlazaConfig.worldDefaultFormat())
 +                && !plazaExplicitGenerator
 +                && !plazaBukkitYmlGenerator) {
-+            return org.plazamc.server.slime.PlazaSlimeWorldBootstrap.createOrLoadWorld(name, creator.environment());
++            final org.bukkit.World plazaWorld = org.plazamc.server.slime.PlazaSlimeWorldBootstrap.createOrLoadWorld(name, creator.environment());
++            org.plazamc.server.world.PlazaWorldShadow.create(name); // legacy folder compatibility
++            return plazaWorld;
 +        }
 +        // Plaza end
 +
