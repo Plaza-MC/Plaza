@@ -1,0 +1,428 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Thu, 9 Jul 2026 16:15:00 +0200
+Subject: [PATCH] Plaza vanilla disablers
+
+
+diff --git a/net/minecraft/server/ServerAdvancementManager.java b/net/minecraft/server/ServerAdvancementManager.java
+index 86e9b9d..e0e8033 100644
+--- a/net/minecraft/server/ServerAdvancementManager.java
++++ b/net/minecraft/server/ServerAdvancementManager.java
+@@ -33,6 +33,13 @@ public class ServerAdvancementManager extends SimpleJsonResourceReloadListener<A
+ 
+     @Override
+     protected void apply(Map<Identifier, Advancement> object, ResourceManager resourceManager, ProfilerFiller profiler) {
++        // Plaza start - disable advancement loading
++        if (org.plazamc.server.PlazaConfig.disableAdvancementLoading()) {
++            this.advancements = new java.util.HashMap<>();
++            this.tree = new AdvancementTree();
++            return;
++        }
++        // Plaza end
+         Builder<Identifier, AdvancementHolder> builder = ImmutableMap.builder();
+         object.forEach((identifier, advancement) -> {
+             // Spigot start
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index 8c9e3a6..ecdf88b 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -932,9 +932,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+             Profiler.get().push("scheduledFunctions");
+             this.serverLevelData.getScheduledEvents().tick(this.server, l);
+             Profiler.get().pop();
+-            if (this.getGameRules().get(GameRules.ADVANCE_TIME)) {
+-                this.setDayTime(this.levelData.getDayTime() + 1L);
++            // Plaza start - disable daylight cycle
++            if (!org.plazamc.server.PlazaConfig.disableDaylightCycle()) {
++                if (this.getGameRules().get(GameRules.ADVANCE_TIME)) {
++                    this.setDayTime(this.levelData.getDayTime() + 1L);
++                }
+             }
++            // Plaza end
+         }
+     }
+ 
+@@ -1026,9 +1030,14 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         } // Paper - Option to disable ice and snow
+ 
+         profilerFiller.popPush("tickBlocks");
+-        if (randomTickSpeed > 0) {
++        // Plaza start - disable block/plant random ticks
++        if (randomTickSpeed > 0
++            && !org.plazamc.server.PlazaConfig.disableCropGrowth()
++            && !org.plazamc.server.PlazaConfig.disablePlantGrowth()
++            && !org.plazamc.server.PlazaConfig.disableLeafDecay()) {
+             this.optimiseRandomTick(chunk, randomTickSpeed); // Paper - optimise random ticking
+         }
++        // Plaza end
+ 
+         profilerFiller.pop();
+     }
+@@ -1203,6 +1212,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     }
+ 
+     private void advanceWeatherCycle() {
++        // Plaza start - disable weather cycle
++        if (org.plazamc.server.PlazaConfig.disableWeatherCycle()) {
++            return;
++        }
++        // Plaza end
+         boolean isRaining = this.isRaining();
+         if (this.canHaveWeather()) {
+             if (this.getGameRules().get(GameRules.ADVANCE_WEATHER)) {
+diff --git a/net/minecraft/stats/ServerStatsCounter.java b/net/minecraft/stats/ServerStatsCounter.java
+index 6b254d2..0a2bbc7 100644
+--- a/net/minecraft/stats/ServerStatsCounter.java
++++ b/net/minecraft/stats/ServerStatsCounter.java
+@@ -65,7 +65,9 @@ public class ServerStatsCounter extends StatsCounter {
+ 
+     public ServerStatsCounter(MinecraftServer server, Path file) {
+         this.file = file;
+-        if (Files.isRegularFile(file)) {
++        // Plaza start - disable statistics tracking
++        if (!org.plazamc.server.PlazaConfig.disableStatisticsTracking() && Files.isRegularFile(file)) {
++        // Plaza end
+             try (Reader bufferedReader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                 JsonElement jsonElement = StrictJsonParser.parse(bufferedReader);
+                 this.parse(server.getFixerUpper(), jsonElement);
+@@ -74,7 +76,9 @@ public class ServerStatsCounter extends StatsCounter {
+             } catch (JsonParseException var9) {
+                 LOGGER.error("Couldn't parse statistics file {}", file, var9);
+             }
++        // Plaza start - disable statistics tracking
+         }
++        // Plaza end
+         // Paper start - Moved after stat fetching for player state file
+         // Moves the loading after vanilla loading, so it overrides the values.
+         // Disables saving any forced stats, so it stays at the same value (without enabling disableStatSaving)
+@@ -90,6 +94,11 @@ public class ServerStatsCounter extends StatsCounter {
+ 
+     public void save() {
+         if (org.spigotmc.SpigotConfig.disableStatSaving) return; // Spigot
++        // Plaza start - disable statistics tracking
++        if (org.plazamc.server.PlazaConfig.disableStatisticsTracking()) {
++            return;
++        }
++        // Plaza end
+         try {
+             FileUtil.createDirectoriesSafe(this.file.getParent());
+ 
+@@ -104,6 +113,11 @@ public class ServerStatsCounter extends StatsCounter {
+     @Override
+     public void setValue(Player player, Stat<?> stat, int value) {
+         if (org.spigotmc.SpigotConfig.disableStatSaving) return; // Spigot
++        // Plaza start - disable statistics tracking
++        if (org.plazamc.server.PlazaConfig.disableStatisticsTracking()) {
++            return;
++        }
++        // Plaza end
+         if (stat.getType() == Stats.CUSTOM && stat.getValue() instanceof final net.minecraft.resources.Identifier key && org.spigotmc.SpigotConfig.forcedStats.get(key) != null) return; // Paper - disable saving forced stats
+         super.setValue(player, stat, value);
+         this.dirty.add(stat);
+diff --git a/net/minecraft/world/entity/Entity.java b/net/minecraft/world/entity/Entity.java
+index 3bf618f..061a294 100644
+--- a/net/minecraft/world/entity/Entity.java
++++ b/net/minecraft/world/entity/Entity.java
+@@ -1914,6 +1914,11 @@ public abstract class Entity implements SyncedDataHolder, DebugValueSource, Name
+     }
+ 
+     protected void applyGravity() {
++        // Plaza start - disable entity gravity
++        if (org.plazamc.server.PlazaConfig.disableGravityEntities() && !(this instanceof net.minecraft.world.entity.player.Player)) {
++            return;
++        }
++        // Plaza end
+         double gravity = this.getGravity();
+         if (gravity != 0.0) {
+             this.setDeltaMovement(this.getDeltaMovement().add(0.0, -gravity, 0.0));
+diff --git a/net/minecraft/world/entity/ExperienceOrb.java b/net/minecraft/world/entity/ExperienceOrb.java
+index f2ec0bd..61bad64 100644
+--- a/net/minecraft/world/entity/ExperienceOrb.java
++++ b/net/minecraft/world/entity/ExperienceOrb.java
+@@ -294,6 +294,11 @@ public class ExperienceOrb extends Entity {
+     }
+ 
+     private void merge(ExperienceOrb orb) {
++        // Plaza start - disable experience orb merge
++        if (org.plazamc.server.PlazaConfig.disableExperienceOrbMerge()) {
++            return;
++        }
++        // Plaza end
+         // Paper start - call orb merge event
+         if (!new com.destroystokyo.paper.event.entity.ExperienceOrbMergeEvent((org.bukkit.entity.ExperienceOrb) this.getBukkitEntity(), (org.bukkit.entity.ExperienceOrb) orb.getBukkitEntity()).callEvent()) {
+             return;
+diff --git a/net/minecraft/world/entity/Mob.java b/net/minecraft/world/entity/Mob.java
+index 8d28ee5..ea418c8 100644
+--- a/net/minecraft/world/entity/Mob.java
++++ b/net/minecraft/world/entity/Mob.java
+@@ -806,6 +806,11 @@ public abstract class Mob extends LivingEntity implements EquipmentUser, Leashab
+             return;
+         }
+         // Paper end - Allow nerfed mobs to jump and float
++        // Plaza start - disable mob pathfinding
++        if (org.plazamc.server.PlazaConfig.disableMobPathfinding()) {
++            return;
++        }
++        // Plaza end
+         ProfilerFiller profilerFiller = Profiler.get();
+         profilerFiller.push("sensing");
+         this.sensing.tick();
+diff --git a/net/minecraft/world/entity/animal/Animal.java b/net/minecraft/world/entity/animal/Animal.java
+index 023b685..059ed8c 100644
+--- a/net/minecraft/world/entity/animal/Animal.java
++++ b/net/minecraft/world/entity/animal/Animal.java
+@@ -183,6 +183,11 @@ public abstract class Animal extends AgeableMob {
+     }
+ 
+     public void setInLove(@Nullable Player player, @Nullable ItemStack breedItemCopy) {
++        // Plaza start - disable mob breeding
++        if (org.plazamc.server.PlazaConfig.disableMobBreeding()) {
++            return;
++        }
++        // Plaza end
+         if (breedItemCopy != null) this.breedItem = breedItemCopy;
+         // Paper end - Fix EntityBreedEvent copying
+         // CraftBukkit start
+diff --git a/net/minecraft/world/entity/item/ItemEntity.java b/net/minecraft/world/entity/item/ItemEntity.java
+index e82bb8f..417f3b3 100644
+--- a/net/minecraft/world/entity/item/ItemEntity.java
++++ b/net/minecraft/world/entity/item/ItemEntity.java
+@@ -121,6 +121,14 @@ public class ItemEntity extends Entity implements TraceableEntity {
+     @Override
+     public void inactiveTick() {
+         super.inactiveTick();
++        // Plaza start - item simulation toggles
++        if (org.plazamc.server.PlazaConfig.disableItemDespawn()) {
++            this.age = -32768;
++        }
++        if (org.plazamc.server.PlazaConfig.disableItemPickupDelay()) {
++            this.pickupDelay = 0;
++        }
++        // Plaza end
+         if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+             this.pickupDelay--;
+         }
+@@ -146,6 +154,14 @@ public class ItemEntity extends Entity implements TraceableEntity {
+             this.discard(org.bukkit.event.entity.EntityRemoveEvent.Cause.DESPAWN); // CraftBukkit - add Bukkit remove cause
+         } else {
+             super.tick();
++            // Plaza start - item simulation toggles
++            if (org.plazamc.server.PlazaConfig.disableItemDespawn()) {
++                this.age = -32768;
++            }
++            if (org.plazamc.server.PlazaConfig.disableItemPickupDelay()) {
++                this.pickupDelay = 0;
++            }
++            // Plaza end
+             if (this.pickupDelay > 0 && this.pickupDelay != 32767) {
+                 this.pickupDelay--;
+             }
+diff --git a/net/minecraft/world/entity/item/PrimedTnt.java b/net/minecraft/world/entity/item/PrimedTnt.java
+index 910e773..d69bcdc 100644
+--- a/net/minecraft/world/entity/item/PrimedTnt.java
++++ b/net/minecraft/world/entity/item/PrimedTnt.java
+@@ -99,6 +99,11 @@ public class PrimedTnt extends Entity implements TraceableEntity {
+ 
+     @Override
+     public void tick() {
++        // Plaza start - disable TNT physics
++        if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++            return;
++        }
++        // Plaza end
+         if (this.level().spigotConfig.maxTntTicksPerTick > 0 && ++this.level().spigotConfig.currentPrimedTnt > this.level().spigotConfig.maxTntTicksPerTick) { return; } // Spigot
+         this.handlePortal();
+         this.applyGravity();
+diff --git a/net/minecraft/world/food/FoodData.java b/net/minecraft/world/food/FoodData.java
+index f492584..6433784 100644
+--- a/net/minecraft/world/food/FoodData.java
++++ b/net/minecraft/world/food/FoodData.java
+@@ -46,6 +46,13 @@ public class FoodData {
+     // CraftBukkit end
+ 
+     public void tick(ServerPlayer player) {
++        // Plaza start - disable hunger
++        if (org.plazamc.server.PlazaConfig.disableHunger()) {
++            this.foodLevel = 20;
++            this.saturationLevel = 5.0F;
++            this.exhaustionLevel = 0.0F;
++        }
++        // Plaza end
+         ServerLevel serverLevel = player.level();
+         Difficulty difficulty = serverLevel.getDifficulty();
+         if (this.exhaustionLevel > 4.0F) {
+@@ -65,6 +72,12 @@ public class FoodData {
+             }
+         }
+ 
++        // Plaza start - disable health regeneration
++        if (org.plazamc.server.PlazaConfig.disableHealthRegeneration()) {
++            this.tickTimer = 0;
++            return;
++        }
++        // Plaza end
+         boolean flag = serverLevel.getGameRules().get(GameRules.NATURAL_HEALTH_REGENERATION);
+         if (flag && this.saturationLevel > 0.0F && player.isHurt() && this.foodLevel >= 20) {
+             this.tickTimer++;
+diff --git a/net/minecraft/world/level/block/FallingBlock.java b/net/minecraft/world/level/block/FallingBlock.java
+index 24b9ce3..ab1b314 100644
+--- a/net/minecraft/world/level/block/FallingBlock.java
++++ b/net/minecraft/world/level/block/FallingBlock.java
+@@ -47,6 +47,11 @@ public abstract class FallingBlock extends Block implements Fallable {
+ 
+     @Override
+     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        // Plaza start - disable falling blocks
++        if (org.plazamc.server.PlazaConfig.disableFallingBlocks()) {
++            return;
++        }
++        // Plaza end
+         if (isFree(level.getBlockState(pos.below())) && pos.getY() >= level.getMinY()) {
+             FallingBlockEntity fallingBlockEntity = FallingBlockEntity.fall(level, pos, state);
+             this.falling(fallingBlockEntity);
+diff --git a/net/minecraft/world/level/block/FireBlock.java b/net/minecraft/world/level/block/FireBlock.java
+index 14a4189..9ef2773 100644
+--- a/net/minecraft/world/level/block/FireBlock.java
++++ b/net/minecraft/world/level/block/FireBlock.java
+@@ -157,6 +157,11 @@ public class FireBlock extends BaseFireBlock {
+ 
+     @Override
+     protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
++        // Plaza start - disable fire spread
++        if (org.plazamc.server.PlazaConfig.disableFireSpread()) {
++            return;
++        }
++        // Plaza end
+         level.scheduleTick(pos, this, getFireTickDelay(level)); // Paper - Add fire-tick-delay option
+         if (level.canSpreadFireAround(pos)) {
+             if (!state.canSurvive(level, pos)) {
+diff --git a/net/minecraft/world/level/block/RedStoneWireBlock.java b/net/minecraft/world/level/block/RedStoneWireBlock.java
+index 6d98bc3..d1aedc7 100644
+--- a/net/minecraft/world/level/block/RedStoneWireBlock.java
++++ b/net/minecraft/world/level/block/RedStoneWireBlock.java
+@@ -319,6 +319,11 @@ public class RedStoneWireBlock extends Block {
+     // Paper end
+ 
+     private void updatePowerStrength(Level level, BlockPos pos, BlockState state, @Nullable Orientation orientation, boolean updateShape) {
++        // Plaza start - disable redstone updates
++        if (org.plazamc.server.PlazaConfig.disableRedstoneUpdates()) {
++            return;
++        }
++        // Plaza end
+         if (useExperimentalEvaluator(level)) {
+             new ExperimentalRedstoneWireEvaluator(this).updatePowerStrength(level, pos, state, orientation, updateShape);
+         } else {
+diff --git a/net/minecraft/world/level/block/TntBlock.java b/net/minecraft/world/level/block/TntBlock.java
+index 00da328..e50791f 100644
+--- a/net/minecraft/world/level/block/TntBlock.java
++++ b/net/minecraft/world/level/block/TntBlock.java
+@@ -47,6 +47,11 @@ public class TntBlock extends Block {
+     @Override
+     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+         if (!oldState.is(state.getBlock())) {
++            // Plaza start - disable TNT physics
++            if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++                return;
++            }
++            // Plaza end
+             if (level.hasNeighborSignal(pos) && prime(level, pos, () -> org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE, null, null))) { // CraftBukkit - TNTPrimeEvent
+                 level.removeBlock(pos, false);
+             }
+@@ -55,6 +60,11 @@ public class TntBlock extends Block {
+ 
+     @Override
+     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, @Nullable Orientation orientation, boolean movedByPiston) {
++        // Plaza start - disable TNT physics
++        if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++            return;
++        }
++        // Plaza end
+         if (level.hasNeighborSignal(pos) && prime(level, pos, () -> org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.REDSTONE, null, null))) { // CraftBukkit - TNTPrimeEvent
+             level.removeBlock(pos, false);
+         }
+@@ -63,6 +73,11 @@ public class TntBlock extends Block {
+     @Override
+     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+         if (!level.isClientSide() && !player.getAbilities().instabuild && state.getValue(UNSTABLE)) {
++            // Plaza start - disable TNT physics
++            if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++                return super.playerWillDestroy(level, pos, state, player);
++            }
++            // Plaza end
+             prime(level, pos, () -> org.bukkit.craftbukkit.event.CraftEventFactory.callTNTPrimeEvent(level, pos, org.bukkit.event.block.TNTPrimeEvent.PrimeCause.BLOCK_BREAK, player, null)); // CraftBukkit - TNTPrimeEvent
+         }
+ 
+@@ -71,6 +86,11 @@ public class TntBlock extends Block {
+ 
+     @Override
+     public void wasExploded(ServerLevel level, BlockPos pos, Explosion explosion) {
++        // Plaza start - disable TNT physics
++        if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++            return;
++        }
++        // Plaza end
+         if (level.getGameRules().get(GameRules.TNT_EXPLODES)) {
+             PrimedTnt primedTnt = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, explosion.getIndirectSourceEntity());
+             int fuse = primedTnt.getFuse();
+@@ -89,6 +109,11 @@ public class TntBlock extends Block {
+     }
+ 
+     private static boolean prime(Level level, BlockPos pos, @Nullable LivingEntity entity, java.util.function.BooleanSupplier event) { // Paper
++        // Plaza start - disable TNT physics
++        if (org.plazamc.server.PlazaConfig.disableTntPhysics()) {
++            return false;
++        }
++        // Plaza end
+         if (level instanceof ServerLevel serverLevel && serverLevel.getGameRules().get(GameRules.TNT_EXPLODES) && event.getAsBoolean()) { // Paper
+             PrimedTnt primedTnt = new PrimedTnt(level, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, entity);
+             level.addFreshEntity(primedTnt);
+diff --git a/net/minecraft/world/level/block/entity/HopperBlockEntity.java b/net/minecraft/world/level/block/entity/HopperBlockEntity.java
+index 12f8105..1fdfa64 100644
+--- a/net/minecraft/world/level/block/entity/HopperBlockEntity.java
++++ b/net/minecraft/world/level/block/entity/HopperBlockEntity.java
+@@ -129,6 +129,11 @@ public class HopperBlockEntity extends RandomizableContainerBlockEntity implemen
+     }
+ 
+     public static void pushItemsTick(Level level, BlockPos pos, BlockState state, HopperBlockEntity blockEntity) {
++        // Plaza start - disable hopper ticking
++        if (org.plazamc.server.PlazaConfig.disableHopperTick()) {
++            return;
++        }
++        // Plaza end
+         blockEntity.cooldownTime--;
+         blockEntity.tickedGameTime = level.getGameTime();
+         if (!blockEntity.isOnCooldown()) {
+diff --git a/net/minecraft/world/level/block/piston/PistonBaseBlock.java b/net/minecraft/world/level/block/piston/PistonBaseBlock.java
+index 3bbfa07..edec777 100644
+--- a/net/minecraft/world/level/block/piston/PistonBaseBlock.java
++++ b/net/minecraft/world/level/block/piston/PistonBaseBlock.java
+@@ -101,6 +101,11 @@ public class PistonBaseBlock extends DirectionalBlock {
+     }
+ 
+     private void checkIfExtend(Level level, BlockPos pos, BlockState state) {
++        // Plaza start - disable piston updates
++        if (org.plazamc.server.PlazaConfig.disablePistonUpdate()) {
++            return;
++        }
++        // Plaza end
+         Direction direction = state.getValue(FACING);
+         boolean neighborSignal = this.getNeighborSignal(level, pos, direction);
+         if (neighborSignal && !state.getValue(EXTENDED)) {
+diff --git a/net/minecraft/world/level/material/FlowingFluid.java b/net/minecraft/world/level/material/FlowingFluid.java
+index 85e9ec8..f7d07b1 100644
+--- a/net/minecraft/world/level/material/FlowingFluid.java
++++ b/net/minecraft/world/level/material/FlowingFluid.java
+@@ -477,6 +477,13 @@ public abstract class FlowingFluid extends Fluid {
+ 
+     @Override
+     public void tick(ServerLevel level, BlockPos pos, BlockState state, FluidState fluidState) {
++        // Plaza start - disable lava/water flow
++        final boolean isLava = fluidState.is(Fluids.LAVA) || fluidState.is(Fluids.FLOWING_LAVA);
++        final boolean isWater = fluidState.is(Fluids.WATER) || fluidState.is(Fluids.FLOWING_WATER);
++        if ((isLava && org.plazamc.server.PlazaConfig.disableLavaFlow()) || (isWater && org.plazamc.server.PlazaConfig.disableWaterFlow())) {
++            return;
++        }
++        // Plaza end
+         if (!fluidState.isSource()) {
+             FluidState newLiquid = this.getNewLiquid(level, pos, level.getBlockState(pos));
+             int spreadDelay = this.getSpreadDelay(level, pos, fluidState, newLiquid);

@@ -4,9 +4,9 @@
 # |  __/| | (_| |/ | (_| |
 # |_|   |_|\__,_/___\__,_|
 #
-# Options marked with [WIP] are parsed but not yet wired into the server.
-# They are kept here so future Plaza updates can enable them without
-# resetting your file.
+# Options in this file are wired into the server. When a new section is still
+# being implemented it will be marked with [WIP]; otherwise the flag is applied
+# immediately after a reload or restart.
 
 # Internal version. Do not change manually; it is used to migrate the file
 # format when Plaza is updated.
@@ -154,16 +154,16 @@ tick-control:
   # Sets noAI on mobs spawned without an explicit AI request.
   disable-mob-ai-by-default: true
 
-  # [WIP] Fine-grained mob control. Parsed but not enforced yet.
+  # Fine-grained mob control.
   disable-mob-pathfinding: true
   disable-mob-breeding: true
 
-  # [WIP] Item and time simulation. Parsed but not enforced yet.
+  # Item and time simulation.
   disable-item-despawn: true
   disable-weather-cycle: true
   disable-daylight-cycle: true
 
-  # [WIP] Block and plant simulation. Parsed but not enforced yet.
+  # Block and plant simulation.
   disable-crop-growth: true
   disable-plant-growth: true
   disable-leaf-decay: true
@@ -171,7 +171,7 @@ tick-control:
   disable-lava-flow: true
   disable-water-flow: true
 
-  # [WIP] Redstone and mechanic ticking. Parsed but not enforced yet.
+  # Redstone and mechanic ticking.
   disable-redstone-updates: true
   disable-hopper-tick: true
   disable-piston-update: true
@@ -179,33 +179,43 @@ tick-control:
 # ---------------------------------------------------------------------------
 # Player tweaks
 # ---------------------------------------------------------------------------
-# [WIP] Quality-of-life adjustments for lobby/minigame players. These options
-# are parsed but not yet applied; they will be wired in a future update.
+# Quality-of-life adjustments for lobby/minigame players.
 # ---------------------------------------------------------------------------
 player:
+  # Keeps food and saturation at default values and ignores exhaustion.
   disable-hunger: true
+  # Prevents natural health regeneration from food/saturation.
   disable-health-regeneration: true
+  # Prevents experience orbs from merging into larger orbs.
   disable-experience-orb-merge: true
+  # Removes the pickup delay on dropped items so they can be collected
+  # immediately.
   disable-item-pickup-delay: true
 
 # ---------------------------------------------------------------------------
 # Achievements
 # ---------------------------------------------------------------------------
-# [WIP] Controls whether advancements and statistics are loaded/tracked.
-# These options are parsed but not yet applied; they will be wired in a future
-# update.
+# Controls whether advancements and statistics are loaded/tracked.
+# Disabling these saves memory and CPU on servers that do not use vanilla
+# progression.
 # ---------------------------------------------------------------------------
 achievements:
+  # Skips loading the advancement tree on startup.
   disable-advancement-loading: true
+  # Ignores statistic updates and disables loading/saving player stats.
   disable-statistics-tracking: true
 
 # ---------------------------------------------------------------------------
 # Physics
 # ---------------------------------------------------------------------------
-# [WIP] Physics toggles for entities, falling blocks and TNT. These options
-# are parsed but not yet applied; they will be wired in a future update.
+# Physics toggles for entities, falling blocks and TNT.
 # ---------------------------------------------------------------------------
 physics:
+  # Disables gravity for non-player entities (items, mobs, projectiles, etc.).
+  # Players keep gravity to avoid movement desync.
   disable-gravity-entities: true
+  # Prevents sand, gravel and other fallable blocks from turning into
+  # falling-block entities.
   disable-falling-blocks: true
+  # Prevents TNT from being primed and freezes any already-primed TNT.
   disable-tnt-physics: true
