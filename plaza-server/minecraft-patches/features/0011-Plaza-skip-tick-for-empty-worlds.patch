@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Thu, 9 Jul 2026 17:30:00 +0200
+Subject: [PATCH] Plaza skip tick for empty worlds
+
+
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index ecdf88b..3cedbd3 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -786,6 +786,13 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+     public void tick(BooleanSupplier hasTimeLeft) {
+         ProfilerFiller profilerFiller = Profiler.get();
+         this.handlingTick = true;
++        // Plaza start - skip tick for empty worlds
++        if (org.plazamc.server.PlazaConfig.disableWorldTickWhenEmpty() && this.players.isEmpty()) {
++            this.getChunkSource().tick(hasTimeLeft, true);
++            this.handlingTick = false;
++            return;
++        }
++        // Plaza end
+         TickRateManager tickRateManager = this.tickRateManager();
+         boolean runsNormally = tickRateManager.runsNormally();
+         if (runsNormally) {

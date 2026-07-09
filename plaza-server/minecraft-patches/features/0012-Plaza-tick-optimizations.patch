@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Thu, 9 Jul 2026 18:00:00 +0200
+Subject: [PATCH] Plaza tick optimizations
+
+Disables ambient particles, only ticks items held in the main hand, and
+adds a basic sleeping-block-entity throttle for inactive block entities.
+
+diff --git a/net/minecraft/server/level/ServerLevel.java b/net/minecraft/server/level/ServerLevel.java
+index 3cedbd3..4ba34ad 100644
+--- a/net/minecraft/server/level/ServerLevel.java
++++ b/net/minecraft/server/level/ServerLevel.java
+@@ -2148,6 +2148,11 @@ public class ServerLevel extends Level implements ServerEntityGetter, WorldGenLe
+         double zDist,
+         double speed
+     ) {
++        // Plaza start - disable ambient particles
++        if (org.plazamc.server.PlazaConfig.disableAmbientParticles()) {
++            return 0;
++        }
++        // Plaza end
+         // Paper end - visibility api support
+         ClientboundLevelParticlesPacket clientboundLevelParticlesPacket = new ClientboundLevelParticlesPacket(
+             options, overrideLimiter, alwaysShow, x, y, z, (float)xDist, (float)yDist, (float)zDist, (float)speed, count
+diff --git a/net/minecraft/world/entity/player/Inventory.java b/net/minecraft/world/entity/player/Inventory.java
+index 41e59f3..94f4351 100644
+--- a/net/minecraft/world/entity/player/Inventory.java
++++ b/net/minecraft/world/entity/player/Inventory.java
+@@ -344,6 +344,15 @@ public class Inventory implements Container, Nameable {
+     }
+ 
+     public void tick() {
++        // Plaza start - only tick items in hand
++        if (org.plazamc.server.PlazaConfig.onlyTickItemsInHand()) {
++            ItemStack selected = this.getSelectedItem();
++            if (!selected.isEmpty()) {
++                selected.inventoryTick(this.player.level(), this.player, EquipmentSlot.MAINHAND);
++            }
++            return;
++        }
++        // Plaza end
+         for (int i = 0; i < this.items.size(); i++) {
+             ItemStack item = this.getItem(i);
+             if (!item.isEmpty()) {
+diff --git a/net/minecraft/world/level/Level.java b/net/minecraft/world/level/Level.java
+index 579bbba..345c896 100644
+--- a/net/minecraft/world/level/Level.java
++++ b/net/minecraft/world/level/Level.java
+@@ -116,6 +116,11 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+     protected final CollectingNeighborUpdater neighborUpdater;
+     private final List<TickingBlockEntity> pendingBlockEntityTickers = Lists.newArrayList();
+     private boolean tickingBlockEntities;
++    // Plaza start - sleeping block entities
++    private final java.util.Map<BlockPos, BlockState> plazaBlockEntityLastState = new java.util.HashMap<>();
++    private final java.util.Map<BlockPos, Integer> plazaBlockEntitySleepCounter = new java.util.HashMap<>();
++    private static final int PLAZA_BLOCK_ENTITY_SLEEP_THRESHOLD = 5;
++    // Plaza end
+     public final Thread thread;
+     private final boolean isDebug;
+     private int skyDarken;
+@@ -1408,13 +1413,41 @@ public abstract class Level implements LevelAccessor, AutoCloseable, ca.spottedl
+             // Spigot end
+             if (tickingBlockEntity.isRemoved()) {
+                 toRemove.add(tickingBlockEntity); // Paper - Fix MC-117075; use removeAll
++                // Plaza start - sleeping block entities
++                if (org.plazamc.server.PlazaConfig.sleepingBlockEntities()) {
++                    this.plazaBlockEntityLastState.remove(tickingBlockEntity.getPos());
++                    this.plazaBlockEntitySleepCounter.remove(tickingBlockEntity.getPos());
++                }
++                // Plaza end
+             } else if (runsNormally && this.shouldTickBlocksAt(tickingBlockEntity.getPos())) {
+-                tickingBlockEntity.tick();
+-                // Paper start - rewrite chunk system
+-                if ((++tickedEntities & 7) == 0) {
+-                    ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemLevel)(Level)(Object)this).moonrise$midTickTasks();
++                // Plaza start - sleeping block entities
++                boolean shouldTick = true;
++                if (org.plazamc.server.PlazaConfig.sleepingBlockEntities()) {
++                    BlockPos pos = tickingBlockEntity.getPos();
++                    BlockState currentState = this.getBlockState(pos);
++                    BlockState lastState = this.plazaBlockEntityLastState.put(pos, currentState);
++                    if (lastState == currentState) {
++                        int counter = this.plazaBlockEntitySleepCounter.getOrDefault(pos, 0);
++                        if (counter >= PLAZA_BLOCK_ENTITY_SLEEP_THRESHOLD) {
++                            shouldTick = false;
++                        } else {
++                            this.plazaBlockEntitySleepCounter.put(pos, counter + 1);
++                        }
++                    } else {
++                        this.plazaBlockEntitySleepCounter.put(pos, 0);
++                    }
++                }
++                if (shouldTick) {
++                // Plaza end
++                    tickingBlockEntity.tick();
++                    // Paper start - rewrite chunk system
++                    if ((++tickedEntities & 7) == 0) {
++                        ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemLevel)(Level)(Object)this).moonrise$midTickTasks();
++                    }
++                    // Paper end - rewrite chunk system
++                // Plaza start - sleeping block entities
+                 }
+-                // Paper end - rewrite chunk system
++                // Plaza end
+             }
+         }
+         this.blockEntityTickers.removeAll(toRemove); // Paper - Fix MC-117075

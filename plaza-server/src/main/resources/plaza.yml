@@ -126,6 +126,15 @@ plaza-worlds:
     max-chunks-scanned: 1024
 
   # -------------------------------------------------------------------------
+  # Empty world tick skip
+  # -------------------------------------------------------------------------
+  # When true, worlds with no players skip almost all tick work. This is the
+  # single most effective CPU saver for lobby/minigame networks that keep many
+  # worlds loaded but only a few active at a time.
+  # -------------------------------------------------------------------------
+  disable-tick-when-empty: true
+
+  # -------------------------------------------------------------------------
   # World list
   # -------------------------------------------------------------------------
   # Worlds Plaza should know about. Worlds with load-on-startup: true are
@@ -175,6 +184,21 @@ tick-control:
   disable-redstone-updates: true
   disable-hopper-tick: true
   disable-piston-update: true
+
+  # Server-side particles sent to clients (potion effects, entity effects,
+  # enchantment particles, etc.). Disabling saves bandwidth and CPU in lobbies
+  # where these visuals are usually irrelevant.
+  disable-ambient-particles: true
+
+  # Only runs inventoryTick on the items in main and offhand, not on every
+  # stack in the inventory. Safe for most plugins and reduces tick cost with
+  # many players carrying full inventories.
+  only-tick-items-in-hand: true
+
+  # Lets inactive block entities (furnaces, brewing stands, chests,
+  # comparators, etc.) skip ticks until their state changes. Hoppers already
+  # have their own Plaza toggle; this covers the rest.
+  sleeping-block-entities: true
 
 # ---------------------------------------------------------------------------
 # Player tweaks

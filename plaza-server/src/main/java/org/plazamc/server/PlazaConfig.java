@@ -85,6 +85,10 @@ public final class PlazaConfig {
         return config().getBoolean("plaza-worlds.spawn-platform.enabled", true);
     }
 
+    public static boolean disableWorldTickWhenEmpty() {
+        return config().getBoolean("plaza-worlds.disable-tick-when-empty", true);
+    }
+
     public static boolean dynamicWorldBorderEnabled() {
         return config().getBoolean("plaza-worlds.dynamic-world-border.enabled", true);
     }
@@ -325,7 +329,19 @@ public final class PlazaConfig {
         return config().getBoolean("tick-control.disable-piston-update", true);
     }
 
-    // Player (WIP)
+    public static boolean disableAmbientParticles() {
+        return config().getBoolean("tick-control.disable-ambient-particles", true);
+    }
+
+    public static boolean onlyTickItemsInHand() {
+        return config().getBoolean("tick-control.only-tick-items-in-hand", true);
+    }
+
+    public static boolean sleepingBlockEntities() {
+        return config().getBoolean("tick-control.sleeping-block-entities", true);
+    }
+
+    // Player
 
     public static boolean disableHunger() {
         return config().getBoolean("player.disable-hunger", true);
@@ -343,7 +359,7 @@ public final class PlazaConfig {
         return config().getBoolean("player.disable-item-pickup-delay", true);
     }
 
-    // Achievements (WIP)
+    // Achievements
 
     public static boolean disableAdvancementLoading() {
         return config().getBoolean("achievements.disable-advancement-loading", true);
@@ -353,7 +369,7 @@ public final class PlazaConfig {
         return config().getBoolean("achievements.disable-statistics-tracking", true);
     }
 
-    // Physics (WIP)
+    // Physics
 
     public static boolean disableGravityEntities() {
         return config().getBoolean("physics.disable-gravity-entities", true);
