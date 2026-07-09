@@ -1,0 +1,211 @@
+#  ____  _
+# |  _ \| | __ _ ______ _
+# | |_) | |/ _` |_  / _` |
+# |  __/| | (_| |/ | (_| |
+# |_|   |_|\__,_/___\__,_|
+#
+# Options marked with [WIP] are parsed but not yet wired into the server.
+# They are kept here so future Plaza updates can enable them without
+# resetting your file.
+
+# Internal version. Do not change manually; it is used to migrate the file
+# format when Plaza is updated.
+config-version: 4
+
+# ---------------------------------------------------------------------------
+# Plaza Worlds
+# ---------------------------------------------------------------------------
+# All world-related configuration lives under this section. Plaza replaces
+# the default Bukkit/Paper world backend with Slime Worlds unless configured
+# otherwise, so lobby and minigame servers do not pay for vanilla terrain
+# generation or simulation they do not need.
+# ---------------------------------------------------------------------------
+plaza-worlds:
+
+  # Default world format for worlds created or loaded through Plaza.
+  # Supported values: SLIME, ANVIL.
+  # SLIME  - in-memory, resettable, plugin-friendly (recommended).
+  # ANVIL  - standard Minecraft region files (slower, for compatibility).
+  default-format: SLIME
+
+  # Default data source for worlds that do not specify one.
+  # The source key must match an entry in plaza-worlds.sources.
+  default-source: file
+
+  # -------------------------------------------------------------------------
+  # World formats
+  # -------------------------------------------------------------------------
+  formats:
+
+    # SLIME format options.
+    slime:
+      # Biome used for void/empty SLIME worlds.
+      default-biome: minecraft:plains
+      # Whether SLIME worlds are read-only by default.
+      read-only: false
+      # Save POI data (villager job sites, beds, etc.).
+      save-poi: true
+      # Save scheduled block ticks (e.g. delayed redstone).
+      save-block-ticks: false
+      # Save scheduled fluid ticks.
+      save-fluid-ticks: false
+
+    # ANVIL format options.
+    anvil:
+      # Allow loading vanilla/ANVIL worlds through Plaza.
+      enabled: false
+
+  # -------------------------------------------------------------------------
+  # World sources
+  # -------------------------------------------------------------------------
+  # Sources are named storage backends. The 'type' field selects the loader.
+  # You can add as many sources as you want and reference them per-world.
+  # -------------------------------------------------------------------------
+  sources:
+
+    # File-based storage. This is the baseline and does not require any
+    # external service.
+    file:
+      type: file
+      # Folder where .slime/.anvil world files are stored.
+      path: plaza_worlds
+
+    # SQL source (MySQL/MariaDB/PostgreSQL via JDBC).
+    # Disabled by default; enable only when configured.
+    sql:
+      type: sql
+      enabled: false
+      dialect: mysql
+      host: 127.0.0.1
+      port: 3306
+      database: plazamc
+      username: plazamc
+      password: ""
+      use-ssl: false
+      table: worlds
+
+    # MongoDB source.
+    # Disabled by default; enable only when configured.
+    mongodb:
+      type: mongodb
+      enabled: false
+      # If set, this URI overrides host/port/database/auth-source.
+      uri: ""
+      host: 127.0.0.1
+      port: 27017
+      database: plazamc
+      collection: worlds
+      username: ""
+      password: ""
+      auth-source: admin
+
+  # -------------------------------------------------------------------------
+  # Spawn platform
+  # -------------------------------------------------------------------------
+  # Plaza void worlds have no terrain. The spawn platform guarantees players
+  # have a safe block to stand on when they join or teleport to a void world.
+  # -------------------------------------------------------------------------
+  spawn-platform:
+    enabled: true
+
+  # -------------------------------------------------------------------------
+  # Dynamic world border
+  # -------------------------------------------------------------------------
+  # Automatically shrinks the world border so it tightly fits the loaded world
+  # data. This hides the ugly void edge on void/lobby maps.
+  # -------------------------------------------------------------------------
+  dynamic-world-border:
+    enabled: true
+    # Extra blocks to add around the discovered bounds.
+    margin-blocks: 8
+    # Smallest border size the recalculation is allowed to set.
+    minimum-size: 16.0
+    # How often the border is recalculated, in ticks.
+    recalculation-interval-ticks: 20
+    # Maximum chunks scanned per recalculation pass.
+    max-chunks-scanned: 1024
+
+  # -------------------------------------------------------------------------
+  # World list
+  # -------------------------------------------------------------------------
+  # Worlds Plaza should know about. Worlds with load-on-startup: true are
+  # loaded automatically; others can be loaded with /plaza world load.
+  # -------------------------------------------------------------------------
+  worlds:
+
+    # Example default world entry. Rename or duplicate this block for each
+    # world you want Plaza to manage.
+    world:
+      format: SLIME
+      source: file
+      load-on-startup: true
+      read-only: false
+
+# ---------------------------------------------------------------------------
+# Tick control
+# ---------------------------------------------------------------------------
+# Lobby and minigame servers rarely need vanilla ticking. The flags below let
+# you disable whole categories of simulation. All options default to true
+# (disabled) because that matches Plaza's performance-first target.
+# ---------------------------------------------------------------------------
+tick-control:
+  # Disables natural mob spawning in all worlds.
+  disable-natural-spawning: true
+  # Sets noAI on mobs spawned without an explicit AI request.
+  disable-mob-ai-by-default: true
+
+  # [WIP] Fine-grained mob control. Parsed but not enforced yet.
+  disable-mob-pathfinding: true
+  disable-mob-breeding: true
+
+  # [WIP] Item and time simulation. Parsed but not enforced yet.
+  disable-item-despawn: true
+  disable-weather-cycle: true
+  disable-daylight-cycle: true
+
+  # [WIP] Block and plant simulation. Parsed but not enforced yet.
+  disable-crop-growth: true
+  disable-plant-growth: true
+  disable-leaf-decay: true
+  disable-fire-spread: true
+  disable-lava-flow: true
+  disable-water-flow: true
+
+  # [WIP] Redstone and mechanic ticking. Parsed but not enforced yet.
+  disable-redstone-updates: true
+  disable-hopper-tick: true
+  disable-piston-update: true
+
+# ---------------------------------------------------------------------------
+# Player tweaks
+# ---------------------------------------------------------------------------
+# [WIP] Quality-of-life adjustments for lobby/minigame players. These options
+# are parsed but not yet applied; they will be wired in a future update.
+# ---------------------------------------------------------------------------
+player:
+  disable-hunger: true
+  disable-health-regeneration: true
+  disable-experience-orb-merge: true
+  disable-item-pickup-delay: true
+
+# ---------------------------------------------------------------------------
+# Achievements
+# ---------------------------------------------------------------------------
+# [WIP] Controls whether advancements and statistics are loaded/tracked.
+# These options are parsed but not yet applied; they will be wired in a future
+# update.
+# ---------------------------------------------------------------------------
+achievements:
+  disable-advancement-loading: true
+  disable-statistics-tracking: true
+
+# ---------------------------------------------------------------------------
+# Physics
+# ---------------------------------------------------------------------------
+# [WIP] Physics toggles for entities, falling blocks and TNT. These options
+# are parsed but not yet applied; they will be wired in a future update.
+# ---------------------------------------------------------------------------
+physics:
+  disable-gravity-entities: true
+  disable-falling-blocks: true
+  disable-tnt-physics: true

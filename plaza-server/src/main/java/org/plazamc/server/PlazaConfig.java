@@ -1,38 +1,70 @@
 package org.plazamc.server;
 
+import dev.dejvokep.boostedyaml.YamlDocument;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
+import dev.dejvokep.boostedyaml.dvs.versioning.BasicVersioning;
+import dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;
+import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
+import dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;
+import dev.dejvokep.boostedyaml.settings.updater.UpdaterSettings;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
  * Plaza configuration.
+ * <p>
+ * Backed by BoostedYAML so comments in {@code plaza.yml} are preserved across
+ * reloads and automatic updates.
  */
 public final class PlazaConfig {
     private static final File CONFIG_FILE = new File("plaza.yml");
     private static final int CURRENT_CONFIG_VERSION = 4;
-    private static YamlConfiguration config;
+    private static final String RESOURCE_PATH = "/plaza.yml";
+    private static YamlDocument config;
 
     private PlazaConfig() {
     }
 
     public static void load() {
-        config = YamlConfiguration.loadConfiguration(CONFIG_FILE);
-        config.options().header("Plaza configuration");
-        config.options().copyDefaults(true);
+        try {
+            final InputStream defaults = PlazaConfig.class.getResourceAsStream(RESOURCE_PATH);
+            config = YamlDocument.create(
+                CONFIG_FILE,
+                defaults,
+                GeneralSettings.DEFAULT,
+                LoaderSettings.builder().setAutoUpdate(true).build(),
+                DumperSettings.DEFAULT,
+                UpdaterSettings.builder().setVersioning(new BasicVersioning("config-version")).build()
+            );
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not load plaza.yml", ex);
+            throw new RuntimeException("Could not load plaza.yml", ex);
+        }
 
         migrate();
-        addDefaults(config);
         save();
     }
 
     public static void reload() {
-        load();
+        if (config == null) {
+            load();
+            return;
+        }
+
+        try {
+            config.reload();
+            migrate();
+            save();
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not reload plaza.yml", ex);
+        }
     }
 
-    public static YamlConfiguration config() {
+    public static YamlDocument config() {
         if (config == null) {
             load();
         }
@@ -73,20 +105,12 @@ public final class PlazaConfig {
         return config().getInt("plaza-worlds.dynamic-world-border.max-chunks-scanned", 1024);
     }
 
-    public static ConfigurationSection plazaWorldsSources() {
-        ConfigurationSection section = config().getConfigurationSection("plaza-worlds.sources");
-        if (section == null) {
-            section = config().createSection("plaza-worlds.sources");
-        }
-        return section;
+    public static Section plazaWorldsSources() {
+        return sectionOrCreate("plaza-worlds.sources");
     }
 
-    public static ConfigurationSection plazaWorldsSourceConfig(final String source) {
-        ConfigurationSection section = plazaWorldsSources().getConfigurationSection(source);
-        if (section == null) {
-            section = plazaWorldsSources().createSection(source);
-        }
-        return section;
+    public static Section plazaWorldsSourceConfig(final String source) {
+        return sectionOrCreate("plaza-worlds.sources." + source);
     }
 
     public static boolean plazaWorldsSourceEnabled(final String source) {
@@ -169,20 +193,12 @@ public final class PlazaConfig {
         return plazaWorldsSourceConfig(source).getString("auth-source", "admin");
     }
 
-    public static ConfigurationSection plazaWorldsWorlds() {
-        ConfigurationSection section = config().getConfigurationSection("plaza-worlds.worlds");
-        if (section == null) {
-            section = config().createSection("plaza-worlds.worlds");
-        }
-        return section;
+    public static Section plazaWorldsWorlds() {
+        return sectionOrCreate("plaza-worlds.worlds");
     }
 
-    public static ConfigurationSection plazaWorldsWorldConfig(final String worldName) {
-        ConfigurationSection section = plazaWorldsWorlds().getConfigurationSection(worldName);
-        if (section == null) {
-            section = plazaWorldsWorlds().createSection(worldName);
-        }
-        return section;
+    public static Section plazaWorldsWorldConfig(final String worldName) {
+        return sectionOrCreate("plaza-worlds.worlds." + worldName);
     }
 
     public static String plazaWorldsWorldFormat(final String worldName) {
@@ -202,13 +218,13 @@ public final class PlazaConfig {
     }
 
     public static void addPlazaWorld(final String worldName, final String format, final String source) {
-        final String path = "plaza-worlds.worlds." + worldName;
-        config().set(path + ".format", format.toUpperCase());
+        final Section worldSection = plazaWorldsWorldConfig(worldName);
+        worldSection.set("format", format.toUpperCase());
         if (source != null && !source.isBlank()) {
-            config().set(path + ".source", source);
+            worldSection.set("source", source);
         }
-        config().set(path + ".load-on-startup", true);
-        config().set(path + ".read-only", false);
+        worldSection.set("load-on-startup", true);
+        worldSection.set("read-only", false);
         save();
         Bukkit.getLogger().info("Added world '" + worldName + "' to plaza.yml (format: " + format.toUpperCase() + ").");
     }
@@ -358,101 +374,28 @@ public final class PlazaConfig {
         }
 
         // Plaza is in intensive development; older configs are reset to the new structure.
-        // We only bump the version so defaults are rewritten on save.
+        // The BoostedYAML updater will copy missing keys from the bundled defaults and
+        // preserve user edits/comments where possible.
         config.set("config-version", CURRENT_CONFIG_VERSION);
+        try {
+            config.update();
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not update plaza.yml to version " + CURRENT_CONFIG_VERSION, ex);
+        }
         Bukkit.getLogger().info("Migrated plaza.yml to version " + CURRENT_CONFIG_VERSION);
     }
 
-    private static void addDefaults(final YamlConfiguration config) {
-        config.addDefault("config-version", CURRENT_CONFIG_VERSION);
-
-        // Plaza worlds: all world-related configuration lives here.
-        config.addDefault("plaza-worlds.default-format", "SLIME");
-        config.addDefault("plaza-worlds.default-source", "file");
-
-        config.addDefault("plaza-worlds.formats.slime.default-biome", "minecraft:plains");
-        config.addDefault("plaza-worlds.formats.slime.read-only", false);
-        config.addDefault("plaza-worlds.formats.slime.save-poi", true);
-        config.addDefault("plaza-worlds.formats.slime.save-block-ticks", false);
-        config.addDefault("plaza-worlds.formats.slime.save-fluid-ticks", false);
-
-        config.addDefault("plaza-worlds.formats.anvil.enabled", false);
-
-        config.addDefault("plaza-worlds.spawn-platform.enabled", true);
-        config.addDefault("plaza-worlds.dynamic-world-border.enabled", true);
-        config.addDefault("plaza-worlds.dynamic-world-border.margin-blocks", 8);
-        config.addDefault("plaza-worlds.dynamic-world-border.minimum-size", 16.0D);
-        config.addDefault("plaza-worlds.dynamic-world-border.recalculation-interval-ticks", 20L);
-        config.addDefault("plaza-worlds.dynamic-world-border.max-chunks-scanned", 1024);
-
-        // Global Plaza world sources. Source keys are arbitrary; the 'type' field selects the backend.
-        config.addDefault("plaza-worlds.sources.file.type", "file");
-        config.addDefault("plaza-worlds.sources.file.path", "plaza_worlds");
-
-        config.addDefault("plaza-worlds.sources.sql.type", "sql");
-        config.addDefault("plaza-worlds.sources.sql.enabled", false);
-        config.addDefault("plaza-worlds.sources.sql.dialect", "mysql");
-        config.addDefault("plaza-worlds.sources.sql.host", "127.0.0.1");
-        config.addDefault("plaza-worlds.sources.sql.port", 3306);
-        config.addDefault("plaza-worlds.sources.sql.database", "plazamc");
-        config.addDefault("plaza-worlds.sources.sql.username", "plazamc");
-        config.addDefault("plaza-worlds.sources.sql.password", "");
-        config.addDefault("plaza-worlds.sources.sql.use-ssl", false);
-        config.addDefault("plaza-worlds.sources.sql.table", "worlds");
-
-        config.addDefault("plaza-worlds.sources.mongodb.type", "mongodb");
-        config.addDefault("plaza-worlds.sources.mongodb.enabled", false);
-        config.addDefault("plaza-worlds.sources.mongodb.uri", "");
-        config.addDefault("plaza-worlds.sources.mongodb.host", "127.0.0.1");
-        config.addDefault("plaza-worlds.sources.mongodb.port", 27017);
-        config.addDefault("plaza-worlds.sources.mongodb.database", "plazamc");
-        config.addDefault("plaza-worlds.sources.mongodb.collection", "worlds");
-        config.addDefault("plaza-worlds.sources.mongodb.username", "");
-        config.addDefault("plaza-worlds.sources.mongodb.password", "");
-        config.addDefault("plaza-worlds.sources.mongodb.auth-source", "admin");
-
-        config.addDefault("plaza-worlds.worlds.world.format", "SLIME");
-        config.addDefault("plaza-worlds.worlds.world.source", "file");
-        config.addDefault("plaza-worlds.worlds.world.load-on-startup", true);
-        config.addDefault("plaza-worlds.worlds.world.read-only", false);
-
-        // Tick control (WIP)
-        config.addDefault("tick-control.disable-natural-spawning", true);
-        config.addDefault("tick-control.disable-mob-ai-by-default", true);
-        config.addDefault("tick-control.disable-mob-pathfinding", true);
-        config.addDefault("tick-control.disable-mob-breeding", true);
-        config.addDefault("tick-control.disable-item-despawn", true);
-        config.addDefault("tick-control.disable-weather-cycle", true);
-        config.addDefault("tick-control.disable-daylight-cycle", true);
-        config.addDefault("tick-control.disable-crop-growth", true);
-        config.addDefault("tick-control.disable-plant-growth", true);
-        config.addDefault("tick-control.disable-leaf-decay", true);
-        config.addDefault("tick-control.disable-fire-spread", true);
-        config.addDefault("tick-control.disable-lava-flow", true);
-        config.addDefault("tick-control.disable-water-flow", true);
-        config.addDefault("tick-control.disable-redstone-updates", true);
-        config.addDefault("tick-control.disable-hopper-tick", true);
-        config.addDefault("tick-control.disable-piston-update", true);
-
-        // Player (WIP)
-        config.addDefault("player.disable-hunger", true);
-        config.addDefault("player.disable-health-regeneration", true);
-        config.addDefault("player.disable-experience-orb-merge", true);
-        config.addDefault("player.disable-item-pickup-delay", true);
-
-        // Achievements (WIP)
-        config.addDefault("achievements.disable-advancement-loading", true);
-        config.addDefault("achievements.disable-statistics-tracking", true);
-
-        // Physics (WIP)
-        config.addDefault("physics.disable-gravity-entities", true);
-        config.addDefault("physics.disable-falling-blocks", true);
-        config.addDefault("physics.disable-tnt-physics", true);
+    private static Section sectionOrCreate(final String route) {
+        Section section = config().getSection(route);
+        if (section == null) {
+            section = config().createSection(route);
+        }
+        return section;
     }
 
     public static void save() {
         try {
-            config.save(CONFIG_FILE);
+            config.save();
         } catch (final IOException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not save plaza.yml", ex);
         }

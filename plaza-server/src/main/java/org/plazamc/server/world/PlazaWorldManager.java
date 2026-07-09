@@ -3,7 +3,7 @@ package org.plazamc.server.world;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
-import org.bukkit.configuration.ConfigurationSection;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.events.PlazaWorldLoadEvent;
@@ -64,8 +64,8 @@ public final class PlazaWorldManager {
     }
 
     public static void loadConfiguredWorlds(String defaultWorldNameToSkip) {
-        ConfigurationSection worlds = PlazaConfig.plazaWorldsWorlds();
-        for (String worldName : worlds.getKeys(false)) {
+        Section worlds = PlazaConfig.plazaWorldsWorlds();
+        for (String worldName : worlds.getRoutesAsStrings(false)) {
             if (defaultWorldNameToSkip != null && defaultWorldNameToSkip.equals(worldName)) {
                 // The default world is bootstrapped separately by PlazaSlimeWorldBootstrap.
                 continue;
@@ -261,7 +261,7 @@ public final class PlazaWorldManager {
             if (folder.exists()) {
                 deleteRecursively(folder);
             }
-            PlazaConfig.config().set("plaza-worlds.worlds." + worldName, null);
+            PlazaConfig.config().remove("plaza-worlds.worlds." + worldName);
             PlazaConfig.save();
             return;
         }

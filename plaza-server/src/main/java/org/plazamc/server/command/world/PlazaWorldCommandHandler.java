@@ -3,7 +3,7 @@ package org.plazamc.server.command.world;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
@@ -158,8 +158,8 @@ public final class PlazaWorldCommandHandler {
 
     public static List<String> sourceNames() {
         final List<String> names = new ArrayList<>();
-        final ConfigurationSection section = PlazaConfig.plazaWorldsSources();
-        for (final String key : section.getKeys(false)) {
+        final Section section = PlazaConfig.plazaWorldsSources();
+        for (final String key : section.getRoutesAsStrings(false)) {
             if (PlazaConfig.plazaWorldsSourceEnabled(key)) {
                 names.add(key);
             }

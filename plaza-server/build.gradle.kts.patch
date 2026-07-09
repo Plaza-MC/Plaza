@@ -1,5 +1,23 @@
 --- a/paper-server/build.gradle.kts
 +++ b/paper-server/build.gradle.kts
+@@ -1,7 +_,17 @@
+ import io.papermc.fill.model.BuildChannel
+ import io.papermc.paperweight.attribute.DevBundleOutput
++import io.papermc.paperweight.core.tasks.IndexLibraryFiles
++import io.papermc.paperweight.tasks.DownloadMcLibraries
++import io.papermc.paperweight.tasks.DownloadPaperLibraries
+ import io.papermc.paperweight.util.*
++import java.nio.file.Files
++import java.nio.file.Path
++import java.nio.file.StandardCopyOption
+ import java.time.Instant
++import java.util.zip.ZipEntry
++import java.util.zip.ZipFile
++import java.util.zip.ZipOutputStream
++import org.gradle.api.file.DirectoryProperty
+ 
+ plugins {
+     `java-library`
 @@ -22,6 +_,18 @@
      minecraftVersion = providers.gradleProperty("mcVersion")
      gitFilePatches = false
@@ -43,7 +61,7 @@
  configurations.named(log4jPlugins.compileClasspathConfigurationName) {
      extendsFrom(configurations.compileClasspath.get())
  }
-@@ -127,7 +_,15 @@
+@@ -127,7 +_,23 @@
  }
  
  dependencies {
@@ -57,6 +75,14 @@
 +    implementation("com.zaxxer:HikariCP:6.2.1")
 +    implementation("org.mongodb:mongodb-driver-sync:5.4.0")
 +    // Plaza end - World data sources
++    // Plaza start - Configuration with comment preservation
++    // BoostedYAML 1.3.6 bundles java5 annotations that lack TYPE_USE targets.
++    // Declare the modern annotations first so they win on the compile classpath.
++    implementation("org.jetbrains:annotations:26.0.2-1")
++    implementation("dev.dejvokep:boosted-yaml:1.3.6") {
++        isTransitive = false
++    }
++    // Plaza end - Configuration with comment preservation
      implementation("ca.spottedleaf:concurrentutil:0.0.8")
      implementation("org.jline:jline-terminal-ffm:3.27.1") // use ffm on java 22+
      implementation("org.jline:jline-terminal-jni:3.27.1") // fall back to jni on java 21
@@ -89,3 +115,91 @@
  idea {
      module {
          generatedSourceDirs.add(generatedDir.toFile())
+@@ -355,6 +_,87 @@
+     classpath(tasks.createReobfPaperclipJar.flatMap { it.outputZip })
+     mainClass.set(null as String?)
+ }
++
++// Plaza start - Fix library sources jars with invalid zip entries
++// BoostedYAML 1.3.6 ships a sources jar containing "./" entries, which breaks
++// paperweight's ZipFileSystem-backed indexing. Re-package any offending jars
++// before the library indexer sees them.
++abstract class FixInvalidLibrarySources : DefaultTask() {
++    @get:InputDirectory
++    abstract val inputDir: DirectoryProperty
++
++    @get:OutputDirectory
++    abstract val outputDir: DirectoryProperty
++
++    @TaskAction
++    fun run() {
++        val input = inputDir.get().asFile.toPath()
++        val output = outputDir.get().asFile.toPath()
++        if (Files.exists(output)) {
++            Files.walk(output).use { stream ->
++                stream.sorted(Comparator.reverseOrder()).forEach { Files.deleteIfExists(it) }
++            }
++        }
++        Files.createDirectories(output)
++
++        Files.walk(input).use { stream ->
++            stream.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith("-sources.jar") }
++                .forEach { jar ->
++                    val target = output.resolve(jar.fileName)
++                    if (hasInvalidEntry(jar)) {
++                        logger.lifecycle("Repackaging ${jar.fileName} to remove invalid zip entries")
++                        repackageJar(jar, target)
++                    } else {
++                        Files.copy(jar, target, StandardCopyOption.REPLACE_EXISTING)
++                    }
++                }
++        }
++    }
++
++    private fun hasInvalidEntry(jar: Path): Boolean {
++        ZipFile(jar.toFile()).use { zip ->
++            val entries = zip.entries()
++            while (entries.hasMoreElements()) {
++                val name = entries.nextElement().name
++                if (name.isEmpty() || name.split('/').any { it == "." || it == ".." }) {
++                    return true
++                }
++            }
++        }
++        return false
++    }
++
++    private fun repackageJar(input: Path, output: Path) {
++        ZipFile(input.toFile()).use { zip ->
++            ZipOutputStream(Files.newOutputStream(output)).use { zos ->
++                val entries = zip.entries()
++                while (entries.hasMoreElements()) {
++                    val entry = entries.nextElement()
++                    val name = entry.name
++                    if (name.isEmpty() || name.split('/').any { it == "." || it == ".." }) {
++                        continue
++                    }
++                    zos.putNextEntry(ZipEntry(name))
++                    zip.getInputStream(entry).use { it.copyTo(zos) }
++                    zos.closeEntry()
++                }
++            }
++        }
++    }
++}
++
++val fixInvalidLibrarySources by tasks.registering(FixInvalidLibrarySources::class) {
++    inputDir.set(tasks.named<DownloadPaperLibraries>("downloadRuntimeClasspathSources").flatMap { it.outputDir })
++    outputDir.set(layout.buildDirectory.dir("fixed-runtime-sources"))
++}
++
++tasks.named<IndexLibraryFiles>("indexLibraryFiles") {
++    libraries.setFrom(
++        fixInvalidLibrarySources.flatMap { it.outputDir },
++        tasks.named<DownloadMcLibraries>("downloadMcLibrariesSources").flatMap { it.outputDir }
++    )
++}
++// Plaza end - Fix library sources jars with invalid zip entries
+ 
+ fill {
+     project("paper")

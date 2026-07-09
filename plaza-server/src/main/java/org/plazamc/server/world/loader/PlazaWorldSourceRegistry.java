@@ -1,6 +1,6 @@
 package org.plazamc.server.world.loader;
 
-import org.bukkit.configuration.ConfigurationSection;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.plazamc.api.world.PlazaWorldLoader;
@@ -28,9 +28,9 @@ public final class PlazaWorldSourceRegistry {
     public static void load() {
         LOADERS.clear();
 
-        ConfigurationSection sources = PlazaConfig.plazaWorldsSources();
-        for (String sourceName : sources.getKeys(false)) {
-            ConfigurationSection section = sources.getConfigurationSection(sourceName);
+        Section sources = PlazaConfig.plazaWorldsSources();
+        for (String sourceName : sources.getRoutesAsStrings(false)) {
+            Section section = sources.getSection(sourceName);
             if (section == null) {
                 continue;
             }
