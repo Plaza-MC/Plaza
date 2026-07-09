@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Thu, 9 Jul 2026 16:20:00 +0200
+Subject: [PATCH] Plaza default server icon
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index da49c80..5c8dddb 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1111,6 +1111,18 @@ public final class CraftServer implements Server {
+     private void loadIcon() {
+         this.icon = new CraftIconCache(null);
+         try {
+             final File file = new File(new File("."), "server-icon.png");
++            // Plaza start - copy default server icon from resources if none exists
++            if (!file.isFile()) {
++                final java.io.InputStream resource = CraftServer.class.getResourceAsStream("/server-icon.png");
++                if (resource != null) {
++                    try {
++                        java.nio.file.Files.copy(resource, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
++                    } finally {
++                        resource.close();
++                    }
++                }
++            }
++            // Plaza end
+             if (file.isFile()) {
+                 this.icon = CraftServer.loadServerIcon0(file);
+             }
