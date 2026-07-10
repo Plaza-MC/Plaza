@@ -9,12 +9,21 @@
 # API, while the server itself is distributed separately as a Paperclip jar
 # (see build.sh). $GROUP and $VERSION are provided by JitPack at build time.
 #
-# Workaround: JitPack's default image ships git < 2.17, which does not support
-# the --prune-tags option that paperweight uses during patch application (it
-# dies with exit code 129). scripts/jitpack/git is a tiny shim that drops that
-# option; here we point PLAZA_REAL_GIT at the real git and prepend the shim to
+# Workaround: JitPack's default image ships git 2.7.4, which is too old for
+# paperweight (it uses options added after 2.17, e.g. --prune-tags, and fails
+# with exit codes 128/129). We install a current git into $HOME without root
+# using micromamba (statically-linked, works on any glibc) and put it first on
 # PATH so paperweight picks it up.
 
 install:
-  - 'export PLAZA_REAL_GIT="$(command -v git)" && export PATH="$PWD/scripts/jitpack:$PATH" && echo "Plaza git shim active -> $(git --version) (real: $($PLAZA_REAL_GIT --version))"'
+  - |
+    set -euo pipefail
+    echo "== os =="; head -n 4 /etc/os-release 2>/dev/null || true
+    echo "== system git =="; command -v git; git --version
+    echo "== sudo? =="; (sudo -n true 2>/dev/null && echo SUDO_OK) || echo NO_SUDO
+    echo "== installing modern git via micromamba =="
+    curl -fSL --retry 3 --retry-delay 2 https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xj bin/micromamba
+    ./bin/micromamba create -y -q -p "$HOME/plaza-env" -c conda-forge git
+    export PATH="$HOME/plaza-env/bin:$PATH"
+    echo "== modern git =="; command -v git; git --version
   - './gradlew applyPaperPatches --no-configuration-cache && ./gradlew :plaza-api:publishToMavenLocal -Pgroup=$GROUP -Pversion=$VERSION -x test --no-configuration-cache'
