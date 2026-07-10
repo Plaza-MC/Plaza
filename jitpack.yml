@@ -29,4 +29,7 @@ install:
     export PATH="$HOME/plaza-env/bin:$PATH"
     echo "== modern git =="; command -v git; git --version
     echo "== git identity =="; git config --global user.email "jitpack@plazamc.local"; git config --global user.name "JitPack"; git config --global --get-regexp '^user\.'
+    # Restore default shell options so they do not leak into JitPack's own
+    # buildit.sh (it references unset vars and breaks under `set -u`).
+    set +eu; set +o pipefail
   - './gradlew applyPaperPatches --no-configuration-cache && ./gradlew :plaza-api:publishToMavenLocal -Pgroup=$GROUP -Pversion=$VERSION -x test --no-configuration-cache'
