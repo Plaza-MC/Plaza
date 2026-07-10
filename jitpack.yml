@@ -1,0 +1,5 @@
+# Plaza - JitPack build configuration.
+
+install:
+  - ./gradlew applyPaperPatches --no-configuration-cache
+  - ./gradlew :plaza-api:publishToMavenLocal -Pgroup=$GROUP -Pversion=$VERSION -x test --no-configuration-cache
