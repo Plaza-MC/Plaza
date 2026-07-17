@@ -44,4 +44,5 @@ plaza-worlds:
 - `sql` (MySQL/MariaDB/PostgreSQL via JDBC) and `mongodb` are **disabled by
   default**; set `enabled: true` only after configuring them.
 - `plaza-worlds.default-source` picks the source for worlds that do not specify
-  one. Per-world source overrides live under `plaza-worlds.worlds.<name>.source`.
+  one. Per-world source overrides live under `worlds.<name>.source` in
+  `worlds.yml` (inside the `file` source folder).

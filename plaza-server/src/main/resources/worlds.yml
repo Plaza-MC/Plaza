@@ -1,0 +1,38 @@
+#  ____  _
+# |  _ \| | __ _ ______ _
+# | |_) | |/ _` |_  / _` |
+# |  __/| | (_| |/ | (_| |
+# |_|   |_|\__,_/___\__,_|
+#
+# Plaza world list.
+#
+# This file lives inside the folder of the 'file' world source (by default
+# plaza_worlds/worlds.yml) so plaza.yml stays small. It is created
+# automatically on startup.
+
+# Internal version. Do not change manually; it is used to migrate the file
+# format when Plaza is updated.
+config-version: 1
+
+# ---------------------------------------------------------------------------
+# World list
+# ---------------------------------------------------------------------------
+# Worlds Plaza should know about. Worlds with load-on-startup: true are
+# loaded automatically; others can be loaded with /plaza world load.
+#
+# Each entry supports:
+#   format           - SLIME or ANVIL (default: plaza-worlds.default-format).
+#   source           - data source key from plaza-worlds.sources
+#                      (default: plaza-worlds.default-source).
+#   load-on-startup  - load automatically when the server starts.
+#   read-only        - open the world without saving changes.
+# ---------------------------------------------------------------------------
+worlds:
+
+  # Example default world entry. Rename or duplicate this block for each
+  # world you want Plaza to manage.
+  world:
+    format: SLIME
+    source: file
+    load-on-startup: true
+    read-only: false

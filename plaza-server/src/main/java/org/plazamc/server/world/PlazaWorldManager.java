@@ -261,8 +261,7 @@ public final class PlazaWorldManager {
             if (folder.exists()) {
                 deleteRecursively(folder);
             }
-            PlazaConfig.config().remove("plaza-worlds.worlds." + worldName);
-            PlazaConfig.save();
+            PlazaConfig.removePlazaWorld(worldName);
             return;
         }
 

@@ -39,13 +39,17 @@ template worlds small and resettable.
 
 ## Per-world entries
 
+The world list lives in its own file: `worlds.yml` inside the folder of the
+`file` source (`plaza_worlds/worlds.yml` by default), so `plaza.yml` stays
+small.
+
 ```yaml
-plaza-worlds:
-  worlds:
-    world:
-      format: SLIME
-      # source: file
-      # load-on-startup: true
+# plaza_worlds/worlds.yml
+worlds:
+  world:
+    format: SLIME
+    # source: file
+    # load-on-startup: true
 ```
 
 Each entry selects the format and (optionally) the data source for a named

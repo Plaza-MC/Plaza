@@ -22,9 +22,13 @@ import org.bukkit.Bukkit;
  */
 public final class PlazaConfig {
     private static final File CONFIG_FILE = new File("plaza.yml");
-    private static final int CURRENT_CONFIG_VERSION = 4;
+    private static final int CURRENT_CONFIG_VERSION = 5;
     private static final String RESOURCE_PATH = "/plaza.yml";
+    private static final String WORLDS_RESOURCE_PATH = "/worlds.yml";
+    private static final String WORLDS_FILE_NAME = "worlds.yml";
     private static YamlDocument config;
+    private static YamlDocument worldsConfig;
+    private static File worldsFile;
 
     private PlazaConfig() {
     }
@@ -47,6 +51,7 @@ public final class PlazaConfig {
 
         migrate();
         save();
+        loadWorldsConfig();
     }
 
     public static void reload() {
@@ -62,6 +67,8 @@ public final class PlazaConfig {
         } catch (final IOException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not reload plaza.yml", ex);
         }
+
+        reloadWorldsConfig();
     }
 
     public static YamlDocument config() {
@@ -69,6 +76,62 @@ public final class PlazaConfig {
             load();
         }
         return config;
+    }
+
+    public static YamlDocument worldsConfig() {
+        if (worldsConfig == null) {
+            loadWorldsConfig();
+        }
+        return worldsConfig;
+    }
+
+    /**
+     * Loads the world list from {@code worlds.yml}, stored inside the folder of
+     * the 'file' world source.
+     */
+    private static void loadWorldsConfig() {
+        worldsFile = new File(plazaWorldsFilePath(), WORLDS_FILE_NAME);
+        final File parent = worldsFile.getParentFile();
+        if (parent != null) {
+            parent.mkdirs();
+        }
+
+        try {
+            final InputStream defaults = PlazaConfig.class.getResourceAsStream(WORLDS_RESOURCE_PATH);
+            worldsConfig = YamlDocument.create(
+                worldsFile,
+                defaults,
+                GeneralSettings.DEFAULT,
+                LoaderSettings.builder().setAutoUpdate(true).build(),
+                DumperSettings.DEFAULT,
+                UpdaterSettings.builder().setVersioning(new BasicVersioning("config-version")).build()
+            );
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not load " + worldsFile.getPath(), ex);
+            throw new RuntimeException("Could not load " + worldsFile.getPath(), ex);
+        }
+
+        saveWorlds();
+    }
+
+    private static void reloadWorldsConfig() {
+        if (worldsConfig == null) {
+            loadWorldsConfig();
+            return;
+        }
+
+        final File configuredFile = new File(plazaWorldsFilePath(), WORLDS_FILE_NAME);
+        if (!configuredFile.equals(worldsFile)) {
+            // The 'file' source path changed; load the world list from the new folder.
+            loadWorldsConfig();
+            return;
+        }
+
+        try {
+            worldsConfig.reload();
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not reload " + worldsFile.getPath(), ex);
+        }
     }
 
     // Plaza worlds configuration (all world-related settings live here)
@@ -197,12 +260,15 @@ public final class PlazaConfig {
         return plazaWorldsSourceConfig(source).getString("auth-source", "admin");
     }
 
+    // World list. Lives in worlds.yml inside the 'file' source folder, not in
+    // plaza.yml; see loadWorldsConfig().
+
     public static Section plazaWorldsWorlds() {
-        return sectionOrCreate("plaza-worlds.worlds");
+        return worldsSectionOrCreate("worlds");
     }
 
     public static Section plazaWorldsWorldConfig(final String worldName) {
-        return sectionOrCreate("plaza-worlds.worlds." + worldName);
+        return worldsSectionOrCreate("worlds." + worldName);
     }
 
     public static String plazaWorldsWorldFormat(final String worldName) {
@@ -229,8 +295,13 @@ public final class PlazaConfig {
         }
         worldSection.set("load-on-startup", true);
         worldSection.set("read-only", false);
-        save();
-        Bukkit.getLogger().info("Added world '" + worldName + "' to plaza.yml (format: " + format.toUpperCase() + ").");
+        saveWorlds();
+        Bukkit.getLogger().info("Added world '" + worldName + "' to " + worldsFile.getPath() + " (format: " + format.toUpperCase() + ").");
+    }
+
+    public static void removePlazaWorld(final String worldName) {
+        worldsConfig().remove("worlds." + worldName);
+        saveWorlds();
     }
 
     // Format-specific configuration
@@ -409,11 +480,27 @@ public final class PlazaConfig {
         return section;
     }
 
+    private static Section worldsSectionOrCreate(final String route) {
+        Section section = worldsConfig().getSection(route);
+        if (section == null) {
+            section = worldsConfig().createSection(route);
+        }
+        return section;
+    }
+
     public static void save() {
         try {
             config.save();
         } catch (final IOException ex) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not save plaza.yml", ex);
+        }
+    }
+
+    public static void saveWorlds() {
+        try {
+            worldsConfig.save();
+        } catch (final IOException ex) {
+            Bukkit.getLogger().log(Level.SEVERE, "Could not save " + worldsFile.getPath(), ex);
         }
     }
 }

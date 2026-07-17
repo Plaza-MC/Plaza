@@ -10,7 +10,7 @@
 
 # Internal version. Do not change manually; it is used to migrate the file
 # format when Plaza is updated.
-config-version: 4
+config-version: 5
 
 # ---------------------------------------------------------------------------
 # Plaza Worlds
@@ -137,18 +137,8 @@ plaza-worlds:
   # -------------------------------------------------------------------------
   # World list
   # -------------------------------------------------------------------------
-  # Worlds Plaza should know about. Worlds with load-on-startup: true are
-  # loaded automatically; others can be loaded with /plaza world load.
-  # -------------------------------------------------------------------------
-  worlds:
-
-    # Example default world entry. Rename or duplicate this block for each
-    # world you want Plaza to manage.
-    world:
-      format: SLIME
-      source: file
-      load-on-startup: true
-      read-only: false
+  # The world list lives in a separate file: worlds.yml inside the folder of
+  # the 'file' source (default: plaza_worlds/worlds.yml). Edit it there.
 
 # ---------------------------------------------------------------------------
 # Tick control
