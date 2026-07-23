@@ -23,9 +23,15 @@ config-version: 5
 plaza-worlds:
 
   # Default world format for worlds created or loaded through Plaza.
-  # Supported values: SLIME, ANVIL.
-  # SLIME  - in-memory, resettable, plugin-friendly (recommended).
+  # Supported values: SLIME, ANVIL, LINEAR.
+  # SLIME  - in-memory template worlds (recommended for lobbies/minigames).
+  #          They do NOT persist game rules, level.dat settings, player data
+  #          or advancements; think of them as resettable RAM worlds.
   # ANVIL  - standard Minecraft region files (slower, for compatibility).
+  # LINEAR - real world folders (full vanilla persistence: game rules,
+  #          settings, player data) with .linear region files instead of
+  #          .mca. Faster and smaller than ANVIL; ideal for persistent
+  #          creative worlds (PlotSquared, housing, etc.).
   default-format: SLIME
 
   # Default data source for worlds that do not specify one.
@@ -38,6 +44,11 @@ plaza-worlds:
   formats:
 
     # SLIME format options.
+    # SLIME worlds are RAM-first template worlds: they keep chunks in memory
+    # and only persist the bare minimum (see the save-* flags below). Game
+    # rules, level.dat settings, player data, stats and advancements are NOT
+    # saved. Perfect for lobbies and minigame maps that reset every match;
+    # use LINEAR or ANVIL for worlds that must remember everything.
     slime:
       # Biome used for void/empty SLIME worlds.
       default-biome: minecraft:plains
@@ -54,6 +65,23 @@ plaza-worlds:
     anvil:
       # Allow loading vanilla/ANVIL worlds through Plaza.
       enabled: false
+
+    # LINEAR format options.
+    # LINEAR worlds behave like ANVIL worlds (a real world folder with
+    # level.dat, game rules, settings, player data, advancements) but store
+    # region, entity and POI data as .linear files (Linear region format v2,
+    # zstd-compressed) instead of .mca. Much faster and smaller than ANVIL
+    # with the same full persistence, so it is a good fit for persistent
+    # creative worlds (PlotSquared, BlueHousing, etc.).
+    linear:
+      # zstd compression level for .linear files (1-22).
+      compression-level: 6
+      # Maximum concurrent region file flushes.
+      io-thread-count: 6
+      # Delay between region file flush checks, in milliseconds.
+      io-flush-delay-ms: 100
+      # Use virtual threads for Linear IO.
+      use-virtual-threads: true
 
   # -------------------------------------------------------------------------
   # World sources

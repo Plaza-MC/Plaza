@@ -66,6 +66,32 @@ public final class PlazaWorldShadow {
     }
 
     /**
+     * Deletes the folder only when it actually is a Plaza shadow folder, and
+     * returns whether anything was deleted.
+     * <p>
+     * A Plaza shadow folder is created by {@link #create(String)} with an
+     * empty (or missing) {@code level.dat}; a real world folder (ANVIL/LINEAR)
+     * always has a non-empty {@code level.dat}. Folder worlds call this when
+     * claiming their folder, so stale Slime shadows are removed without ever
+     * wiping real world data.
+     */
+    public static boolean deleteIfShadow(final String worldName) {
+        final File folder = getShadowFolder(worldName);
+        if (!folder.isDirectory()) {
+            return false;
+        }
+
+        final File levelDat = new File(folder, LEVEL_DAT);
+        if (levelDat.isFile() && levelDat.length() > 0) {
+            // Real world data (ANVIL/LINEAR); never delete it here.
+            return false;
+        }
+
+        deleteRecursively(folder);
+        return true;
+    }
+
+    /**
      * Returns whether the shadow folder for the given world exists and looks
      * like a valid vanilla world folder.
      */

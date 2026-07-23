@@ -334,6 +334,24 @@ public final class PlazaConfig {
         return config().getBoolean("plaza-worlds.formats.anvil.enabled", false);
     }
 
+    // LINEAR format configuration
+
+    public static int linearCompressionLevel() {
+        return config().getInt("plaza-worlds.formats.linear.compression-level", 6);
+    }
+
+    public static int linearIoThreadCount() {
+        return config().getInt("plaza-worlds.formats.linear.io-thread-count", 6);
+    }
+
+    public static long linearIoFlushDelayMs() {
+        return config().getLong("plaza-worlds.formats.linear.io-flush-delay-ms", 100L);
+    }
+
+    public static boolean linearUseVirtualThreads() {
+        return config().getBoolean("plaza-worlds.formats.linear.use-virtual-threads", true);
+    }
+
     // Tick control
 
     public static boolean disableNaturalSpawning() {

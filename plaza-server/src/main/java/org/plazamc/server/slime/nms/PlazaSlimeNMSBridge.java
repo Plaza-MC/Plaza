@@ -63,9 +63,10 @@ public final class PlazaSlimeNMSBridge {
             throw new RuntimeException("Could not install command storage for Slime overworld", e);
         }
 
-        // The Slime overworld is now live; load any configured Anvil worlds that were
-        // deferred because they need a valid overworld to call Bukkit.createWorld().
-        org.plazamc.server.world.PlazaWorldManager.loadDeferredAnvilWorlds();
+        // The Slime overworld is now live; load any configured folder worlds (ANVIL,
+        // LINEAR) that were deferred because they need a valid overworld to call
+        // Bukkit.createWorld().
+        org.plazamc.server.world.PlazaWorldManager.loadDeferredFolderWorlds();
 
         return true;
     }

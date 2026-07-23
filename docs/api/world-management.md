@@ -95,10 +95,14 @@ api.migrateWorld("arena", currentLoader, newLoader);
 
 `PlazaWorldFormat` identifies the storage format:
 
-- `SLIME`: default. In-memory, resettable, plugin-friendly.
+- `SLIME`: default. In-memory template worlds; they do not persist game
+  rules, level.dat settings or player data. Resettable, plugin-friendly.
 - `ANVIL`: vanilla region files. Slower; must be enabled in the server
   configuration (see [`server/configuration.md`](../server/configuration.md)).
-- `LINEAR`, `POLAR`: reserved for future optimized formats.
+- `LINEAR`: real world folder with full vanilla persistence, storing region,
+  entity and POI data as zstd-compressed `.linear` files (Linear region
+  format v2). Faster and smaller than ANVIL.
+- `POLAR`: reserved for a future optimized format.
 
 ```java
 PlazaWorldFormat fmt = data.getFormat();

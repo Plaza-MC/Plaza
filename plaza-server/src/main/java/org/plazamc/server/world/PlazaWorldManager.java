@@ -14,6 +14,7 @@ import org.plazamc.api.exceptions.UnknownWorldException;
 import org.plazamc.api.exceptions.WorldAlreadyExistsException;
 import org.plazamc.api.exceptions.WorldLoadedException;
 import org.plazamc.api.world.PlazaWorld;
+import org.plazamc.api.world.PlazaWorldFormat;
 import org.plazamc.api.world.PlazaWorldInstance;
 import org.plazamc.api.world.PlazaWorldLoader;
 import org.plazamc.api.world.PlazaWorldPropertyMap;
@@ -41,7 +42,7 @@ public final class PlazaWorldManager {
 
     private static final Logger LOGGER = Logger.getLogger("Plaza");
     private static final Map<String, PlazaWorldInstance> LOADED_WORLDS = new ConcurrentHashMap<>();
-    private static final java.util.List<String> DEFERRED_ANVIL_WORLDS = new java.util.ArrayList<>();
+    private static final java.util.List<String> DEFERRED_FOLDER_WORLDS = new java.util.ArrayList<>();
 
     private PlazaWorldManager() {
     }
@@ -77,11 +78,11 @@ public final class PlazaWorldManager {
 
             String format = PlazaConfig.plazaWorldsWorldFormat(worldName);
             LOGGER.info("Configured world '" + worldName + "' has format: " + format);
-            if ("ANVIL".equalsIgnoreCase(format)) {
-                // Anvil worlds rely on Bukkit.createWorld(), which needs the overworld ready.
-                // During early bootstrap it is not available yet, so defer Anvil loading.
-                LOGGER.info("Deferring Anvil world '" + worldName + "' until after bootstrap.");
-                DEFERRED_ANVIL_WORLDS.add(worldName);
+            if ("ANVIL".equalsIgnoreCase(format) || "LINEAR".equalsIgnoreCase(format)) {
+                // Folder worlds rely on Bukkit.createWorld(), which needs the overworld ready.
+                // During early bootstrap it is not available yet, so defer their loading.
+                LOGGER.info("Deferring " + format.toUpperCase() + " world '" + worldName + "' until after bootstrap.");
+                DEFERRED_FOLDER_WORLDS.add(worldName);
                 continue;
             }
 
@@ -102,41 +103,43 @@ public final class PlazaWorldManager {
     }
 
     /**
-     * Loads any configured Anvil worlds that were deferred during early bootstrap.
-     * This must be called once the overworld is fully initialised.
+     * Loads any configured folder worlds (ANVIL or LINEAR) that were deferred
+     * during early bootstrap. This must be called once the overworld is fully
+     * initialised.
      */
-    public static void loadDeferredAnvilWorlds() {
-        LOGGER.info("Loading deferred Anvil worlds: " + DEFERRED_ANVIL_WORLDS);
-        if (DEFERRED_ANVIL_WORLDS.isEmpty()) {
+    public static void loadDeferredFolderWorlds() {
+        LOGGER.info("Loading deferred folder worlds: " + DEFERRED_FOLDER_WORLDS);
+        if (DEFERRED_FOLDER_WORLDS.isEmpty()) {
             return;
         }
 
-        for (final String worldName : DEFERRED_ANVIL_WORLDS) {
+        for (final String worldName : DEFERRED_FOLDER_WORLDS) {
             try {
-                LOGGER.info("Loading deferred Anvil world '" + worldName + "'.");
-                loadAnvilWorld(worldName);
+                LOGGER.info("Loading deferred folder world '" + worldName + "'.");
+                loadFolderWorld(worldName);
             } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Could not load deferred Anvil world " + worldName, ex);
+                LOGGER.log(Level.SEVERE, "Could not load deferred folder world " + worldName, ex);
             }
         }
-        DEFERRED_ANVIL_WORLDS.clear();
+        DEFERRED_FOLDER_WORLDS.clear();
     }
 
-    public static void loadAnvilWorld(final String worldName) {
+    public static void loadFolderWorld(final String worldName) {
         if (Bukkit.getWorld(worldName) != null) {
             return;
         }
 
+        final PlazaWorldFormat format = PlazaWorldFormat.fromId(PlazaConfig.plazaWorldsWorldFormat(worldName));
         final WorldCreator creator = new WorldCreator(worldName)
             .environment(World.Environment.NORMAL)
             .generator(new org.plazamc.server.generator.PlazaVoidChunkGenerator());
         final World bukkitWorld = creator.createWorld();
         if (bukkitWorld == null) {
-            LOGGER.warning("Could not load Anvil world '" + worldName + "'");
+            LOGGER.warning("Could not load " + format.getId() + " world '" + worldName + "'");
             return;
         }
 
-        registerLoadedWorld(new PlazaAnvilWorld(worldName, false), bukkitWorld);
+        registerLoadedWorld(new PlazaFolderWorld(worldName, false, format), bukkitWorld);
     }
 
     @NotNull
@@ -256,7 +259,9 @@ public final class PlazaWorldManager {
             unloadWorld(worldName, false);
         }
 
-        if ("ANVIL".equalsIgnoreCase(PlazaConfig.plazaWorldsWorldFormat(worldName))) {
+        final String plazaWorldFormat = PlazaConfig.plazaWorldsWorldFormat(worldName);
+        if ("ANVIL".equalsIgnoreCase(plazaWorldFormat) || "LINEAR".equalsIgnoreCase(plazaWorldFormat)) {
+            // Folder worlds own their vanilla world folder; delete it directly.
             final java.io.File folder = new java.io.File(Bukkit.getWorldContainer(), worldName);
             if (folder.exists()) {
                 deleteRecursively(folder);

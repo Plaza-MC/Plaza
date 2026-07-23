@@ -33,12 +33,12 @@ public final class WorldLoadSubCommand implements PlazaCommandInterface, PlazaWo
 
         final String name = args[0];
         final String format = PlazaConfig.plazaWorldsWorldFormat(name);
-        if ("ANVIL".equalsIgnoreCase(format)) {
+        if ("ANVIL".equalsIgnoreCase(format) || "LINEAR".equalsIgnoreCase(format)) {
             try {
-                org.plazamc.server.world.PlazaWorldManager.loadAnvilWorld(name);
-                PlazaCommand.send(sender, "&aLoaded Anvil world '" + name + "'.");
+                org.plazamc.server.world.PlazaWorldManager.loadFolderWorld(name);
+                PlazaCommand.send(sender, "&aLoaded " + format.toUpperCase() + " world '" + name + "'.");
             } catch (final Exception ex) {
-                LOGGER.log(Level.SEVERE, "Could not load Anvil world " + name, ex);
+                LOGGER.log(Level.SEVERE, "Could not load " + format + " world " + name, ex);
                 PlazaCommand.send(sender, "&cCould not load world. See console.");
             }
             return true;

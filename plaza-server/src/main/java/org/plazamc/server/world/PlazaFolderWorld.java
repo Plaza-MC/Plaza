@@ -17,26 +17,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Minimal Plaza world wrapper for vanilla Anvil worlds. Used so that Bukkit-created
- * Anvil worlds can be tracked by Plaza's world manager.
+ * Minimal Plaza world wrapper for worlds that own a real world folder
+ * (ANVIL or LINEAR). Used so that Bukkit-created folder worlds can be
+ * tracked by Plaza's world manager.
  */
-public final class PlazaAnvilWorld implements PlazaWorld {
+public final class PlazaFolderWorld implements PlazaWorld {
 
     private final String name;
     private final boolean readOnly;
+    private final PlazaWorldFormat format;
     private final PlazaWorldPropertyMap properties;
     private final ConcurrentMap<String, net.kyori.adventure.nbt.BinaryTag> extraData;
     private final PlazaAdventurePersistentDataContainer pdc;
 
-    public PlazaAnvilWorld(@NotNull String name, boolean readOnly) {
-        this(name, readOnly, new PlazaWorldPropertyMapImpl(), new ConcurrentHashMap<>());
+    public PlazaFolderWorld(@NotNull String name, boolean readOnly, @NotNull PlazaWorldFormat format) {
+        this(name, readOnly, format, new PlazaWorldPropertyMapImpl(), new ConcurrentHashMap<>());
     }
 
-    public PlazaAnvilWorld(@NotNull String name, boolean readOnly,
-                           @NotNull PlazaWorldPropertyMap properties,
-                           @NotNull ConcurrentMap<String, net.kyori.adventure.nbt.BinaryTag> extraData) {
+    public PlazaFolderWorld(@NotNull String name, boolean readOnly, @NotNull PlazaWorldFormat format,
+                            @NotNull PlazaWorldPropertyMap properties,
+                            @NotNull ConcurrentMap<String, net.kyori.adventure.nbt.BinaryTag> extraData) {
         this.name = name;
         this.readOnly = readOnly;
+        this.format = format;
         this.properties = properties;
         this.extraData = extraData;
         this.pdc = new PlazaAdventurePersistentDataContainer(extraData);
@@ -57,7 +60,7 @@ public final class PlazaAnvilWorld implements PlazaWorld {
     @Override
     @NotNull
     public PlazaWorldFormat getFormat() {
-        return PlazaWorldFormat.ANVIL;
+        return this.format;
     }
 
     @Override
@@ -89,7 +92,7 @@ public final class PlazaAnvilWorld implements PlazaWorld {
     @Override
     @NotNull
     public PlazaWorld clone(@NotNull String worldName, @Nullable PlazaWorldLoader loader) throws WorldAlreadyExistsException, IOException {
-        throw new UnsupportedOperationException("Cloning Anvil worlds is not supported yet");
+        throw new UnsupportedOperationException("Cloning folder worlds is not supported yet");
     }
 
     @Override

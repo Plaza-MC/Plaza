@@ -63,7 +63,7 @@
  configurations.named(log4jPlugins.compileClasspathConfigurationName) {
      extendsFrom(configurations.compileClasspath.get())
  }
-@@ -127,7 +_,23 @@
+@@ -127,7 +_,26 @@
  }
  
  dependencies {
@@ -73,6 +73,9 @@
 +    implementation("net.kyori:adventure-nbt:4.26.1")
 +    implementation("com.github.luben:zstd-jni:1.5.6-9")
 +    // Plaza end - Slime format layer
++    // Plaza start - Linear region format
++    implementation("net.openhft:zero-allocation-hashing:2026.0")
++    // Plaza end - Linear region format
 +    // Plaza start - World data sources
 +    implementation("com.zaxxer:HikariCP:6.2.1")
 +    implementation("org.mongodb:mongodb-driver-sync:5.4.0")

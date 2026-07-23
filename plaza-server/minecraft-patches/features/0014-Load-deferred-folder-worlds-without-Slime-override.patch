@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: PlazaMC <dev@plazamc.org>
+Date: Fri, 17 Jul 2026 22:30:00 +0200
+Subject: [PATCH] Load deferred folder worlds without Slime override
+
+Configured ANVIL/LINEAR worlds defer their loading until Bukkit world
+creation is possible. Previously the deferred load only ran from the Slime
+overworld override path, so with a non-SLIME default format those worlds
+never loaded. Call loadDeferredFolderWorlds after loadInitialWorlds as well;
+it is a no-op when the Slime path already consumed the list.
+
+diff --git a/net/minecraft/server/MinecraftServer.java b/net/minecraft/server/MinecraftServer.java
+index 5717b4a..0c4f0c4 100644
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -605,6 +605,7 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+         io.papermc.paper.world.PaperWorldLoader loader = io.papermc.paper.world.PaperWorldLoader.create(this, levelId);
+         org.plazamc.server.slime.PlazaSlimeWorldBootstrap.bootstrapDefaultWorlds(this); // Plaza - Slime World default bootstrap
+         loader.loadInitialWorlds();
++        org.plazamc.server.world.PlazaWorldManager.loadDeferredFolderWorlds(); // Plaza - load folder worlds deferred during bootstrap when the Slime override path did not run
+         // Paper end - rework world loading process
+         if (profiledDuration != null) {
+             profiledDuration.finish(true);

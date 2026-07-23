@@ -21,7 +21,12 @@ config-version: 1
 # loaded automatically; others can be loaded with /plaza world load.
 #
 # Each entry supports:
-#   format           - SLIME or ANVIL (default: plaza-worlds.default-format).
+#   format           - SLIME, ANVIL or LINEAR (default:
+#                      plaza-worlds.default-format).
+#                      SLIME keeps the world in memory and does not persist
+#                      game rules/settings (lobbies, minigames); LINEAR and
+#                      ANVIL use a real world folder with full vanilla
+#                      persistence (plots, housing, creative).
 #   source           - data source key from plaza-worlds.sources
 #                      (default: plaza-worlds.default-source).
 #   load-on-startup  - load automatically when the server starts.

@@ -12,6 +12,7 @@ import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.plazamc.api.PlazaAPI;
 import org.plazamc.api.world.PlazaWorld;
+import org.plazamc.api.world.PlazaWorldFormat;
 import org.plazamc.api.world.PlazaWorldLoader;
 import org.plazamc.api.world.PlazaWorldPropertyMapImpl;
 import org.plazamc.server.PlazaConfig;
@@ -20,14 +21,14 @@ import org.plazamc.server.command.PlazaCommandInterface;
 import org.plazamc.server.command.world.PlazaWorldCommandHandler;
 import org.plazamc.server.command.world.PlazaWorldTabCompletable;
 import org.plazamc.server.generator.PlazaVoidChunkGenerator;
-import org.plazamc.server.world.PlazaAnvilWorld;
+import org.plazamc.server.world.PlazaFolderWorld;
 import org.plazamc.server.world.PlazaWorldManager;
 import org.plazamc.server.world.loader.PlazaWorldSourceRegistry;
 
 public final class WorldCreateSubCommand implements PlazaCommandInterface, PlazaWorldTabCompletable {
 
     private static final Logger LOGGER = Logger.getLogger("Plaza");
-    private static final List<String> FORMATS = Arrays.asList("slime", "anvil");
+    private static final List<String> FORMATS = Arrays.asList("slime", "anvil", "linear");
 
     @Override
     public boolean onCommand(final CommandSender sender, final @Nullable Command cmd, final String commandLabel, final String[] args) {
@@ -54,8 +55,8 @@ public final class WorldCreateSubCommand implements PlazaCommandInterface, Plaza
             format = args[2].toLowerCase();
         }
 
-        if ("anvil".equals(format)) {
-            return createAnvilWorld(sender, name, source);
+        if ("anvil".equals(format) || "linear".equals(format)) {
+            return createFolderWorld(sender, name, source, format);
         }
 
         if (!"slime".equals(format)) {
@@ -87,26 +88,28 @@ public final class WorldCreateSubCommand implements PlazaCommandInterface, Plaza
         return true;
     }
 
-    private static boolean createAnvilWorld(final CommandSender sender, final String name, final String source) {
+    private static boolean createFolderWorld(final CommandSender sender, final String name, final String source, final String format) {
         if (org.bukkit.Bukkit.getWorld(name) != null) {
             PlazaCommand.send(sender, "&cWorld '" + name + "' already exists.");
             return true;
         }
 
-        PlazaConfig.addPlazaWorld(name, "anvil", source);
+        // Register the world before creation so the region storage hook sees the
+        // configured format when the world folder is first opened.
+        PlazaConfig.addPlazaWorld(name, format, source);
 
         final WorldCreator creator = new WorldCreator(name)
             .environment(World.Environment.NORMAL)
             .generator(new PlazaVoidChunkGenerator());
         final World bukkitWorld = creator.createWorld();
         if (bukkitWorld == null) {
-            PlazaCommand.send(sender, "&cCould not create Anvil world '" + name + "'.");
+            PlazaCommand.send(sender, "&cCould not create " + format + " world '" + name + "'.");
             return true;
         }
 
-        final PlazaAnvilWorld worldData = new PlazaAnvilWorld(name, false);
+        final PlazaFolderWorld worldData = new PlazaFolderWorld(name, false, PlazaWorldFormat.fromId(format));
         PlazaWorldManager.registerLoadedWorld(worldData, bukkitWorld);
-        PlazaCommand.send(sender, "&aCreated and loaded Anvil world '" + name + "'.");
+        PlazaCommand.send(sender, "&aCreated and loaded " + format.toUpperCase() + " world '" + name + "'.");
         return true;
     }
 
